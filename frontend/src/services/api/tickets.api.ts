@@ -54,4 +54,14 @@ export const ticketsApi = {
   getDashboardStats: () => {
     return apiClient.get<DashboardStats>('/tickets/stats/dashboard');
   },
+
+  // Seed sample tickets
+  seed: () => {
+    return apiClient.post<{ success: boolean; count: number; tickets: Ticket[] }>('/tickets/seed');
+  },
+
+  // Debug endpoint - check DB state
+  debug: () => {
+    return apiClient.get<{ totalTickets: number; recentTickets: Ticket[] }>('/tickets/debug');
+  },
 };

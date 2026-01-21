@@ -325,3 +325,117 @@ ticketRoutes.get('/stats/dashboard', async (_req: Request, res: Response) => {
     stagnantCount: stagnantTickets.length,
   });
 });
+
+// POST /api/tickets/seed - Create sample test tickets
+ticketRoutes.post('/seed', async (_req: Request, res: Response) => {
+  const now = new Date();
+  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
+
+  const sampleTickets = [
+    {
+      title: 'Login authentication failing for admin users',
+      description: 'Multiple reports of admin panel login failures. Users see "Invalid credentials" even with correct password.',
+      status: 'BLOCKED' as const,
+      priority: 'CRITICAL' as const,
+      tags: JSON.stringify(['auth', 'urgent', 'admin']),
+      createdAt: twoDaysAgo,
+      lastActivityAt: twoDaysAgo,
+    },
+    {
+      title: 'Payment gateway timeout during checkout',
+      description: 'Customers report checkout failing with timeout errors. Affecting ~20 transactions per day.',
+      status: 'IN_PROGRESS' as const,
+      priority: 'CRITICAL' as const,
+      tags: JSON.stringify(['payment', 'revenue', 'checkout']),
+      createdAt: fiveDaysAgo,
+      lastActivityAt: fiveDaysAgo,
+    },
+    {
+      title: 'Dashboard reports showing incorrect data',
+      description: 'Exported CSV reports have mismatched numbers compared to dashboard view. Data accuracy concern.',
+      status: 'NEW' as const,
+      priority: 'HIGH' as const,
+      tags: JSON.stringify(['reports', 'data-quality']),
+      createdAt: now,
+      lastActivityAt: now,
+    },
+    {
+      title: 'User onboarding flow crashes on mobile',
+      description: 'App crashes during signup on iOS Safari. 15+ users affected last week.',
+      status: 'IN_PROGRESS' as const,
+      priority: 'HIGH' as const,
+      tags: JSON.stringify(['mobile', 'ios', 'crash']),
+      createdAt: eightDaysAgo,
+      lastActivityAt: eightDaysAgo,
+    },
+    {
+      title: 'Email notifications delayed by 2-3 hours',
+      description: 'Notification system lag causing poor user experience. Not urgent but needs attention.',
+      status: 'WAITING_CLIENT' as const,
+      priority: 'MEDIUM' as const,
+      tags: JSON.stringify(['email', 'notifications']),
+      createdAt: fiveDaysAgo,
+      lastActivityAt: fiveDaysAgo,
+    },
+    {
+      title: 'Search function not returning recent tickets',
+      description: 'Search index appears to be out of sync. Users can\'t find tickets from last 2 days.',
+      status: 'NEW' as const,
+      priority: 'LOW' as const,
+      tags: JSON.stringify(['search', 'bug']),
+      createdAt: now,
+      lastActivityAt: now,
+    },
+  ];
+
+  const created = await Promise.all(sampleTickets.map(async (data) => {
+    const ticket = await prisma.ticket.create({
+      data,
+    });
+
+    // Create initial activity
+    await prisma.ticketActivity.create({
+      data: {
+        ticketId: ticket.id,
+        type: 'STATUS_CHANGE',
+        content: `Ticket created with status: ${data.status}`,
+      },
+    });
+
+    return {
+      ...ticket,
+      tags: JSON.parse(ticket.tags),
+    };
+  }));
+
+  console.log('[Seed] Created sample tickets:', created.length);
+
+  res.json({
+    success: true,
+    count: created.length,
+    tickets: created,
+  });
+});
+
+// GET /api/tickets/debug - Debug endpoint to check DB state
+ticketRoutes.get('/debug', async (_req: Request, res: Response) => {
+  const tickets = await prisma.ticket.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  });
+
+  res.json({
+    totalTickets: await prisma.ticket.count(),
+    recentTickets: tickets.map(t => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      tags: JSON.parse(t.tags),
+      createdAt: t.createdAt,
+      lastActivityAt: t.lastActivityAt,
+    })),
+  });
+});

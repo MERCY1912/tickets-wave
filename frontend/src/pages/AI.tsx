@@ -2,15 +2,18 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAIStore, useTicketsStore } from '../store/index.js';
 import { Button } from '../components/ui/index.js';
+import { ticketsApi } from '../services/api/index.js';
 
 // AI Status types
 type AIStatus = 'ready' | 'thinking' | 'analyzing';
 
 export default function AI() {
   const { messages, loading, error, sendMessage, clearMessages } = useAIStore();
-  const { tickets } = useTicketsStore();
+  const { tickets, fetchTickets } = useTicketsStore();
   const [input, setInput] = useState('');
-  const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>();
+  const [selectedTicketId, setSelectedTicketId = useState<string | undefined>();
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Determine AI status based on state
@@ -45,6 +48,32 @@ export default function AI() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleSeedTickets = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await ticketsApi.seed();
+      await fetchTickets(); // Refresh tickets list
+      setDebugInfo(`Created ${result.count} sample tickets`);
+      console.log('[Seed] Result:', result);
+    } catch (error) {
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[Seed] Error:', error);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const handleDebugDB = async () => {
+    try {
+      const result = await ticketsApi.debug();
+      setDebugInfo(`Total tickets: ${result.totalTickets}\nRecent: ${result.recentTickets.map(t => `[${t.status}] ${t.title}`).join('\n')}`);
+      console.log('[Debug] DB State:', result);
+    } catch (error) {
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[Debug] Error:', error);
     }
   };
 
@@ -332,6 +361,41 @@ export default function AI() {
               <p className="text-xs font-medium text-gray-900 dark:text-gray-100 capitalize">{aiStatus}</p>
               <p className="text-[10px] text-gray-500 dark:text-gray-400">AI System Status</p>
             </div>
+          </div>
+        </div>
+
+        {/* Debug Tools */}
+        <div className="bg-gray-50/80 dark:bg-gray-900/40 backdrop-blur-xl rounded-2xl p-4 border border-gray-200/50 dark:border-gray-800/30">
+          <h3 className="text-xs font-semibold text-gray-900 dark:text-foreground mb-3 uppercase tracking-wider">Debug Tools</h3>
+          <div className="space-y-2">
+            <motion.button
+              whileHover={{ x: 1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleDebugDB}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-800/30 transition-all"
+            >
+              <svg className="h-3.5 w-3.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 110-4 2 2 0 014 0Z" />
+              </svg>
+              <span>Check DB State</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ x: 1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSeedTickets}
+              disabled={isSeeding}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-800/30 transition-all disabled:opacity-50"
+            >
+              <svg className="h-3.5 w-3.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 5a3 3 0 100-6 3 3 0 000 6zm0 6a3 3 0 110-6 3 3 0 016 0z" />
+              </svg>
+              <span>{isSeeding ? 'Creating...' : 'Create Sample Tickets'}</span>
+            </motion.button>
+            {debugInfo && (
+              <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded-lg text-[10px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap border border-gray-200/50 dark:border-gray-700/30">
+                {debugInfo}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
