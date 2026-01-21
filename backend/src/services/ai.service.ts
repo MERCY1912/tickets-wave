@@ -127,6 +127,7 @@ If asked about priority, explain your reasoning based on:
     if (options.context?.ticketId) {
       const context = await buildTicketContext(options.context.ticketId);
       if (context) {
+        console.log('[AI Chat] Ticket context loaded:', context.ticket.title);
         messages.push({
           role: 'system',
           content: `CURRENT TICKET CONTEXT:\n${formatContextAsText(context)}\n\nWhen responding, keep this ticket context in mind. Reference specific details when relevant.`,
@@ -136,6 +137,7 @@ If asked about priority, explain your reasoning based on:
 
     // Add conversation history if provided
     if (options.context?.conversationHistory) {
+      console.log('[AI Chat] Conversation history length:', options.context.conversationHistory.length);
       messages.push(...options.context.conversationHistory);
     }
 
@@ -145,6 +147,12 @@ If asked about priority, explain your reasoning based on:
       content: options.message,
     });
 
+    console.log('[AI Chat] Sending to Ollama:', {
+      model: settings.ollamaModel,
+      messagesCount: messages.length,
+      userMessage: options.message.substring(0, 100),
+    });
+
     try {
       const response = await this.client.chat({
         model: settings.ollamaModel,
@@ -152,12 +160,15 @@ If asked about priority, explain your reasoning based on:
         temperature: settings.ollamaTemperature,
       });
 
+      console.log('[AI Chat] Response from Ollama:', response.substring(0, 200));
+
       return {
         response,
         timestamp: new Date(),
         model: settings.ollamaModel,
       };
     } catch (error) {
+      console.error('[AI Chat] Error:', error);
       throw new Error(`AI chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -272,9 +283,12 @@ Format as a numbered list with brief explanations.`;
       contexts = await getActiveTicketsForBriefing();
     }
 
+    console.log('[AI Analyze Tickets] Total tickets:', contexts.length);
+    console.log('[AI Analyze Tickets] Ticket IDs:', ticketIds || 'all active');
+
     if (contexts.length === 0) {
       return {
-        response: 'No tickets to analyze.',
+        response: 'No tickets found to analyze. Please create some tickets first.',
         timestamp: new Date(),
         model: settings.ollamaModel,
       };
@@ -314,24 +328,32 @@ Format as a numbered list with brief explanations.`;
     });
 
     const ticketsText = sortedTickets.map(t =>
-      `[${t.priority}] ${t.status} | ${t.title}
-      Description: ${t.description.substring(0, 100)}${t.description.length > 100 ? '...' : ''}
-      Age: ${t.daysSinceCreated}d old | Stale: ${t.daysSinceActivity}d since activity
-      Tags: ${t.tags} | Activities: ${t.activityCount}`
+      `ID: ${t.id}
+[${t.priority}] ${t.status} | ${t.title}
+Description: ${t.description.substring(0, 100)}${t.description.length > 100 ? '...' : ''}
+Age: ${t.daysSinceCreated} days old | Stale: ${t.daysSinceActivity} days since activity
+Tags: ${t.tags} | Activities: ${t.activityCount}`
     ).join('\n\n');
 
-    const prompt = `You are analyzing ${contexts.length} tickets in a support system.
+    const prompt = `You are analyzing ${contexts.length} REAL tickets from the database.
 
-TICKETS TO ANALYZE:
+IMPORTANT: You MUST analyze the ACTUAL ticket data provided below. Do NOT use placeholder examples or fake tickets.
+
+REAL TICKETS FROM DATABASE:
 ${ticketsText}
 
 For your analysis, consider:
-1. PRIORITY ANALYSIS: Which tickets need immediate attention based on priority, age, and staleness
-2. SLA RISK: Identify tickets at risk (stale for 7+ days, waiting too long, blocked)
+1. PRIORITY ANALYSIS: Which tickets need immediate attention based on priority (${critical.length} critical, ${high.length} high)
+2. SLA RISK: Identify tickets at risk (stale 7+ days: ${contexts.filter(c => {
+      const days = Math.floor((now - new Date(c.ticket.lastActivityAt).getTime()) / 86400000);
+      return days >= 7;
+    }).length} tickets)
 3. PATTERNS: Common themes, similar issues, or systemic problems
 4. ACTION ITEMS: Specific next steps for each critical/high priority ticket
 
-Provide a structured analysis with clear sections and actionable recommendations.`;
+Provide a structured analysis with clear sections and actionable recommendations using REAL ticket data.`;
+
+    console.log('[AI Analyze Tickets] Prompt length:', prompt.length);
 
     const response = await this.client.chat({
       model: settings.ollamaModel,
@@ -348,6 +370,8 @@ Provide a structured analysis with clear sections and actionable recommendations
       temperature: settings.ollamaTemperature,
     });
 
+    console.log('[AI Analyze Tickets] Response received, length:', response.length);
+
     return {
       response,
       timestamp: new Date(),
@@ -362,11 +386,27 @@ Provide a structured analysis with clear sections and actionable recommendations
     const settings = await this.getSettings();
     const contexts = await getActiveTicketsForBriefing();
 
+    // DEBUG: Log what we got from database
+    console.log('[AI Daily Briefing] Total tickets from DB:', contexts.length);
+    console.log('[AI Daily Briefing] Tickets:', contexts.map(c => ({
+      id: c.ticket.id,
+      title: c.ticket.title,
+      status: c.ticket.status,
+      priority: c.ticket.priority,
+    })));
+
     const now = new Date();
     const critical = contexts.filter(c => c.ticket.priority === 'CRITICAL');
     const high = contexts.filter(c => c.ticket.priority === 'HIGH');
     const blocked = contexts.filter(c => c.ticket.status === 'BLOCKED');
     const waiting = contexts.filter(c => c.ticket.status === 'WAITING_CLIENT');
+
+    console.log('[AI Daily Briefing] Breakdown:', {
+      critical: critical.length,
+      high: high.length,
+      blocked: blocked.length,
+      waiting: waiting.length,
+    });
 
     // Build detailed ticket list with urgency indicators
     const urgentTickets = [];
@@ -387,37 +427,47 @@ Provide a structured analysis with clear sections and actionable recommendations
       if (daysSinceActivity >= 7) urgencyFlags.push(`STALE ${daysSinceActivity}d`);
       if (c.ticket.status === 'WAITING_CLIENT' && daysSinceActivity >= 3) urgencyFlags.push(`WAITING ${daysSinceActivity}d`);
 
-      if (urgencyFlags.length > 0) {
-        urgentTickets.push({
-          id: c.ticket.id,
-          title: c.ticket.title,
-          status: c.ticket.status,
-          priority: c.ticket.priority,
-          description: c.ticket.description?.substring(0, 80) || 'No description',
-          urgency: urgencyFlags.join(' | '),
-          daysSinceActivity,
-          daysSinceCreated,
-        });
-      }
+      // Include ALL tickets in briefing, not just urgent ones
+      urgentTickets.push({
+        id: c.ticket.id,
+        title: c.ticket.title,
+        status: c.ticket.status,
+        priority: c.ticket.priority,
+        description: c.ticket.description?.substring(0, 80) || 'No description',
+        urgency: urgencyFlags.length > 0 ? urgencyFlags.join(' | ') : 'Normal',
+        daysSinceActivity,
+        daysSinceCreated,
+      });
     }
 
-    // Sort by urgency
+    // Sort by priority and urgency
     urgentTickets.sort((a, b) => {
+      // First sort by has urgency vs no urgency
+      if (a.urgency === 'Normal' && b.urgency !== 'Normal') return 1;
+      if (a.urgency !== 'Normal' && b.urgency === 'Normal') return -1;
+
+      // Then by priority
       const priorityScore = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
       const aScore = priorityScore[a.priority as keyof typeof priorityScore] || 0;
       const bScore = priorityScore[b.priority as keyof typeof priorityScore] || 0;
       if (aScore !== bScore) return bScore - aScore;
+
+      // Then by staleness
       return b.daysSinceActivity - a.daysSinceActivity;
     });
 
-    const topTickets = urgentTickets.slice(0, 10).map(t =>
-      `[${t.priority}] ${t.status}
-       ${t.title}
-       ${t.description}
-       Urgency: ${t.urgency}`
+    // Take all tickets (up to 15) for the prompt
+    const topTickets = urgentTickets.slice(0, 15).map(t =>
+      `ID: ${t.id}
+[${t.priority}] | ${t.status} | Age: ${t.daysSinceCreated}d | Stale: ${t.daysSinceActivity}d
+Title: ${t.title}
+Description: ${t.description}
+Urgency: ${t.urgency}`
     ).join('\n\n---\n\n');
 
-    const prompt = `You are a senior support manager's AI assistant. Generate a concise daily briefing.
+    const prompt = `You are analyzing ${contexts.length} REAL tickets from the database.
+
+IMPORTANT: You MUST analyze the ACTUAL ticket data provided below. Do NOT use placeholder examples.
 
 CURRENT SITUATION:
 - Total active tickets: ${contexts.length}
@@ -426,15 +476,18 @@ CURRENT SITUATION:
 - Blocked: ${blocked.length}
 - Waiting on client: ${waiting.length}
 
-TICKETS REQUIRING ATTENTION (${urgentTickets.length} total):
-${urgentTickets.length > 0 ? topTickets : 'No urgent tickets at this time.'}
+ALL TICKETS IN DATABASE:
+${topTickets}
 
-Provide a structured briefing with:
+Based on these REAL tickets, provide:
 1. OVERVIEW: 2-3 sentence summary of current situation
-2. FOCUS TODAY: Top 3-5 tickets to work on with brief reasons
+2. FOCUS TODAY: Top 3-5 tickets to work on with specific reasons from the data
 3. RISK ALERT: Any tickets at risk (stale 7+ days, waiting too long, blocked)
 
-Keep it under 200 words. Be specific and actionable.`;
+Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details.`;
+
+    console.log('[AI Daily Briefing] Sending prompt to AI, length:', prompt.length);
+    console.log('[AI Daily Briefing] Model:', settings.ollamaModel);
 
     const response = await this.client.chat({
       model: settings.ollamaModel,
@@ -445,11 +498,14 @@ Keep it under 200 words. Be specific and actionable.`;
         },
         {
           role: 'user',
-          content: prompt,
-        },
-      ],
+      content: prompt,
+    },
+  ],
       temperature: settings.ollamaTemperature,
     });
+
+    console.log('[AI Daily Briefing] AI response length:', response.length);
+    console.log('[AI Daily Briefing] AI response preview:', response.substring(0, 200));
 
     return {
       response,
