@@ -105,8 +105,8 @@ export default function Kanban() {
       </motion.div>
 
       {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex gap-4 h-full min-w-max pb-2">
+      <div className="flex-1 overflow-hidden">
+        <div className="flex gap-4 h-full">
           <AnimatePresence>
             {columns.map((column, index) => {
               const columnTickets = getTicketsByStatus(column.status);
@@ -118,7 +118,7 @@ export default function Kanban() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.06, ease: [0.4, 0, 0.2, 1] }}
-                  className={`flex-shrink-0 w-80 flex flex-col rounded-[20px] border border-gray-200/50 dark:border-gray-800/50 transition-all duration-200 ${
+                  className={`flex-1 min-w-[220px] flex flex-col rounded-[20px] border border-gray-200/50 dark:border-gray-800/50 transition-all duration-200 ${
                     isDragOver ? 'ring-2 ring-violet-400/50 shadow-lg' : ''
                   }`}
                   style={{
