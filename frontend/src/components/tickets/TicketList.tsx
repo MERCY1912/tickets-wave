@@ -87,7 +87,10 @@ export function TicketList() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-card rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-border/50 space-y-4"
+        className="bg-white dark:bg-card rounded-[20px] p-5 border border-gray-200/50 dark:border-gray-800/50 space-y-4"
+        style={{
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
+        }}
       >
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <CommandPaletteButton
@@ -119,7 +122,7 @@ export function TicketList() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSortToggle}
-              className="px-2.5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-accent dark:hover:bg-accent/80 text-gray-700 dark:text-accent-foreground transition-colors text-sm font-medium"
+              className="px-3 py-2 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 transition-all duration-200 text-sm font-medium"
               title={`Sort ${filters.sortOrder === 'asc' ? 'ascending' : 'descending'}`}
             >
               {filters.sortOrder === 'asc' ? '↑' : '↓'}
@@ -133,7 +136,7 @@ export function TicketList() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
         >
-          <p className="text-sm text-gray-600 dark:text-muted-foreground">
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
             {pagination.total} ticket{pagination.total !== 1 ? 's' : ''} found
           </p>
         </motion.div>
@@ -182,28 +185,39 @@ export function TicketList() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-card rounded-xl p-16 text-center shadow-sm border border-gray-200/50 dark:border-border/50"
+          className="bg-white dark:bg-card rounded-[20px] p-16 text-center border border-gray-200/50 dark:border-gray-800/50"
+          style={{
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
+          }}
         >
           <motion.div
             initial={{ y: 0 }}
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="inline-block mb-4"
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="inline-block mb-5"
           >
-            <svg className="h-16 w-16 text-gray-300 dark:text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-            </svg>
+            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 flex items-center justify-center ring-1 ring-violet-100/50 dark:ring-violet-900/30 mx-auto">
+              <svg className="h-10 w-10 text-violet-400 dark:text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            </div>
           </motion.div>
-          <p className="text-gray-500 dark:text-muted-foreground">No tickets found</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground mb-2">No tickets found</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+            {filters.search || filters.status || filters.priority
+              ? 'Try adjusting your filters or search query'
+              : 'Create your first ticket to get started'}
+          </p>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {tickets.map((ticket, index) => (
             <motion.div
               key={ticket.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03, duration: 0.3 }}
+              transition={{ delay: index * 0.04, duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
               <TicketCard ticket={ticket} />
             </motion.div>
@@ -227,6 +241,7 @@ export function TicketList() {
               });
             }}
             disabled={loading}
+            className="rounded-xl bg-white dark:bg-card border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all"
           >
             Load More
           </Button>
@@ -248,12 +263,15 @@ export function TicketList() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-xl mx-4 bg-white dark:bg-card rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="relative w-full max-w-xl mx-4 bg-white dark:bg-card rounded-[20px] shadow-2xl border border-gray-200/50 dark:border-gray-800/50 overflow-hidden"
+            style={{
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(124, 58, 237, 0.1)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800/50">
               <svg className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
@@ -263,10 +281,10 @@ export function TicketList() {
                 placeholder="Search tickets..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="flex-1 bg-transparent border-0 outline-none text-gray-900 dark:text-foreground placeholder:text-gray-400"
+                className="flex-1 bg-transparent border-0 outline-none text-gray-900 dark:text-foreground placeholder:text-gray-400 text-sm"
                 autoFocus
               />
-              <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
                 ESC
               </kbd>
             </div>
@@ -275,10 +293,16 @@ export function TicketList() {
             <div className="max-h-96 overflow-y-auto p-2">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="h-6 w-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : tickets.length === 0 ? (
                 <div className="py-8 text-center">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950/30 mb-3">
+                    <svg className="h-6 w-6 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                  </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">No tickets found</p>
                 </div>
               ) : (
@@ -290,9 +314,9 @@ export function TicketList() {
                         handleCommandPaletteClose();
                         // Navigate to ticket details would go here
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-all duration-200 group"
                     >
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-sm shadow-violet-500/25">
                         {ticket.title.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -300,7 +324,7 @@ export function TicketList() {
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{ticket.description || 'No description'}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500 text-white">{ticket.status}</span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white">{ticket.status}</span>
                       </div>
                     </button>
                   ))}
@@ -309,13 +333,13 @@ export function TicketList() {
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-4">
-                <span>↑↓ to navigate</span>
-                <span>↵ to select</span>
-                <span>ESC to close</span>
+                <span>↑↓ navigate</span>
+                <span>↵ select</span>
+                <span>ESC close</span>
               </div>
-              <span>{tickets.length} results</span>
+              <span className="font-medium">{tickets.length} results</span>
             </div>
           </motion.div>
         </div>

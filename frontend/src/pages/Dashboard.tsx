@@ -20,7 +20,7 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-// Stat card component with icon
+// Stat card component with icon - Premium SaaS style
 function StatCard({
   label,
   value,
@@ -31,37 +31,39 @@ function StatCard({
   label: string;
   value: number;
   icon: React.ReactNode;
-  color: 'blue' | 'cyan' | 'amber' | 'red';
+  color: 'violet' | 'indigo' | 'amber' | 'rose';
   trend?: 'up' | 'down' | 'neutral';
 }) {
   const colorStyles = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-    cyan: 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400',
-    amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-    red: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+    violet: 'bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 text-violet-600 dark:text-violet-400 ring-1 ring-violet-100/50 dark:ring-violet-900/30',
+    indigo: 'bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-100/50 dark:ring-indigo-900/30',
+    amber: 'bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/40 text-amber-600 dark:text-amber-400 ring-1 ring-amber-100/50 dark:ring-amber-900/30',
+    rose: 'bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/40 dark:to-pink-950/40 text-rose-600 dark:text-rose-400 ring-1 ring-rose-100/50 dark:ring-rose-900/30',
   };
 
   return (
     <motion.div
       variants={item}
-      whileHover={{ y: -1 }}
-      transition={{ duration: 0.2 }}
-      className="bg-white dark:bg-card rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-default"
-      style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      className="group bg-white dark:bg-card rounded-[20px] p-6 transition-all duration-300 cursor-default border border-gray-200/50 dark:border-gray-800/50 hover:border-violet-200/50 dark:hover:border-violet-800/30"
+      style={{
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
+      }}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{label}</p>
           <motion.p
-            className="text-3xl font-bold text-gray-900 dark:text-foreground leading-none"
+            className="text-3xl font-bold tracking-tight text-gray-900 dark:text-foreground leading-none"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           >
             {value}
           </motion.p>
         </div>
-        <div className={`h-11 w-11 rounded-xl ${colorStyles[color]} flex items-center justify-center`}>
+        <div className={`h-12 w-12 rounded-2xl ${colorStyles[color]} flex items-center justify-center transition-transform group-hover:scale-105`}>
           {icon}
         </div>
       </div>
@@ -69,10 +71,10 @@ function StatCard({
   );
 }
 
-// Icons
+// Icons - Premium strokes
 function TicketIcon() {
   return (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -82,7 +84,7 @@ function TicketIcon() {
 
 function NewIcon() {
   return (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <line x1="12" x2="12" y1="8" y2="16" />
       <line x1="8" x2="16" y1="12" y2="12" />
@@ -92,7 +94,7 @@ function NewIcon() {
 
 function ProgressIcon() {
   return (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 12" />
     </svg>
@@ -101,7 +103,7 @@ function ProgressIcon() {
 
 function AlertIcon() {
   return (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <line x1="12" x2="12" y1="8" y2="12" />
       <line x1="12" x2="12.01" y1="16" y2="16" />
@@ -142,8 +144,8 @@ export default function Dashboard() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-foreground">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Welcome back! Here's what's happening with your tickets.
           </p>
         </div>
@@ -154,7 +156,7 @@ export default function Dashboard() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
       >
         {/* Stat Cards */}
         {stats && (
@@ -163,13 +165,13 @@ export default function Dashboard() {
               label="Total Tickets"
               value={stats.total}
               icon={<TicketIcon />}
-              color="blue"
+              color="violet"
             />
             <StatCard
               label="New"
               value={stats.byStatus.NEW || 0}
               icon={<NewIcon />}
-              color="cyan"
+              color="indigo"
             />
             <StatCard
               label="In Progress"
@@ -181,115 +183,106 @@ export default function Dashboard() {
               label="Stagnant"
               value={stats.stagnantCount}
               icon={<AlertIcon />}
-              color="red"
+              color="rose"
             />
           </>
         )}
       </motion.div>
 
-      {/* Morning Report Card - Full width */}
+      {/* AI Morning Report - Glassmorphism premium card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        whileHover={{ y: -1 }}
-        className="hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+        whileHover={{ y: -2 }}
+        className="transition-all duration-300"
       >
-        <div className="bg-gradient-to-br from-indigo-50 via-white to-white dark:from-indigo-950/30 dark:via-card dark:to-card rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden relative">
-          {/* Animated Gradient Border */}
-          <div className="absolute inset-0 rounded-2xl p-[2px]">
-            <div className="w-full h-full rounded-2xl bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 opacity-20" />
-          </div>
-          <div className="absolute inset-[2px] rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-white dark:from-indigo-950/30 dark:via-card dark:to-card" />
-
-          {/* Inner glow effect */}
-          <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_60px_-15px_rgba(139,92,246,0.15)]" />
-
-          {/* Content container - relative to sit on top */}
-          <div className="relative z-10">
-            {/* Premium Gradient Header */}
-            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-lg">✨</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      AI Morning Report
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white/90">AI</span>
-                    </h3>
-                    <p className="text-xs text-white/90">AI-powered daily overview</p>
-                  </div>
+        <div className="glass-ai rounded-[20px] overflow-hidden">
+          {/* Content */}
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                  <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="m2 17 10 5 10-5" />
+                    <path d="m2 12 10 5 10-5" />
+                  </svg>
                 </div>
+                <div>
+                  <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-foreground flex items-center gap-2">
+                    AI Morning Report
+                    <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white font-medium">AI</span>
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">AI-powered daily overview</p>
+                </div>
+              </div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="sm"
+                  onClick={handleGenerateBriefing}
+                  isLoading={aiLoading}
+                  className="bg-gradient-to-r from-violet-500 to-indigo-500 text-white hover:from-violet-600 hover:to-indigo-600 border-0 shadow-md shadow-violet-500/25"
+                >
+                  <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 12" />
+                    <path d="M21 3v9h-9" />
+                  </svg>
+                  Refresh
+                </Button>
+              </motion.div>
+            </div>
+
+            {!briefing ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 flex items-center justify-center mb-5 ring-1 ring-violet-100/50 dark:ring-violet-900/30">
+                  <svg className="h-10 w-10 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="m2 17 10 5 10-5" />
+                    <path d="m2 12 10 5 10-5" />
+                  </svg>
+                </div>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-foreground mb-2">Start your day informed</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">Generate your AI-powered morning report to get insights on your tickets</p>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    size="sm"
-                    onClick={handleGenerateBriefing}
-                    isLoading={aiLoading}
-                    className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-0"
-                  >
-                    <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 12" />
-                      <path d="M21 3v9h-9" />
-                    </svg>
-                    Refresh
+                  <Button onClick={handleGenerateBriefing} isLoading={aiLoading} className="bg-gradient-to-r from-violet-500 to-indigo-500 text-white border-0 shadow-md shadow-violet-500/25">
+                    Generate Report
                   </Button>
                 </motion.div>
               </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              {!briefing ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="h-16 w-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
-                    <svg className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 0-3 3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76-3.76a1 1 0 0 0-1.4 0l-1.6 1.6a1 1 0 0 0 0 1.4l3.76 3.76a1 1 0 0 0 1.4-3.77l-6.91-6.91a2.12 2.12 0 0 1 3-3l6.91 6.91a6 6 0 0 0 7.94-7.94Z" />
-                    </svg>
-                  </div>
-                  <h4 className="text-base font-semibold text-gray-900 dark:text-foreground mb-1">No briefing yet</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Generate your AI-powered morning report</p>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button onClick={handleGenerateBriefing} isLoading={aiLoading}>
-                      Generate Report
-                    </Button>
+            ) : (
+              <div className="space-y-4">
+                {briefing.split('\n\n').map((paragraph, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800/50"
+                  >
+                    <div className={`h-7 w-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention')
+                        ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 dark:from-amber-950/40 dark:to-amber-900/30 dark:text-amber-400 ring-1 ring-amber-200/50 dark:ring-amber-800/30'
+                        : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:text-emerald-400 ring-1 ring-emerald-200/50 dark:ring-emerald-800/30'
+                    }`}>
+                      {paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention') ? (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" x2="12" y1="8" y2="12" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed flex-1">{paragraph}</p>
                   </motion.div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {briefing.split('\n\n').map((paragraph, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="flex gap-3"
-                    >
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention')
-                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                      }`}>
-                        {paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention') ? (
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" x2="12" y1="8" y2="12" />
-                          </svg>
-                        ) : (
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{paragraph}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-          </div>
+        </div>
       </motion.div>
 
       {/* Recent Tickets */}
@@ -298,10 +291,10 @@ export default function Dashboard() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground">Recent Tickets</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-foreground">Recent Tickets</h2>
           <motion.div whileHover={{ x: 2 }} whileTap={{ x: 0 }}>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/tickets')}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/tickets')} className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30">
               View All →
             </Button>
           </motion.div>
@@ -316,8 +309,8 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-foreground">Due Reminders</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-lg font-semibold tracking-tight mb-5 text-gray-900 dark:text-foreground">Due Reminders</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {dueReminders.slice(0, 4).map((reminder, index) => (
               <motion.div
                 key={reminder.id}

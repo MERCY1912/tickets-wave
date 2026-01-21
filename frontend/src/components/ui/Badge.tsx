@@ -30,12 +30,12 @@ export interface StatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const statusConfig: Record<TicketStatus, { label: string; className: string }> = {
-  NEW: { label: 'New', className: 'bg-blue-500 text-white hover:bg-blue-600' },
-  IN_PROGRESS: { label: 'In Progress', className: 'bg-cyan-500 text-white hover:bg-cyan-600' },
-  WAITING_CLIENT: { label: 'Waiting', className: 'bg-amber-500 text-white hover:bg-amber-600' },
-  BLOCKED: { label: 'Blocked', className: 'bg-red-500 text-white hover:bg-red-600' },
-  DONE: { label: 'Done', className: 'bg-green-500 text-white hover:bg-green-600' },
-  FROZEN: { label: 'Frozen', className: 'bg-gray-500 text-white hover:bg-gray-600' },
+  NEW: { label: 'New', className: 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm shadow-violet-500/25' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm shadow-cyan-500/25' },
+  WAITING_CLIENT: { label: 'Waiting', className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/25' },
+  BLOCKED: { label: 'Blocked', className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-sm shadow-red-500/25' },
+  DONE: { label: 'Done', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm shadow-emerald-500/25' },
+  FROZEN: { label: 'Frozen', className: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm' },
 };
 
 export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(function StatusBadge(
@@ -61,10 +61,10 @@ export interface PriorityBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const priorityConfig: Record<Priority, { label: string; className: string }> = {
-  LOW: { label: 'Low', className: 'bg-emerald-500 text-white hover:bg-emerald-600' },
-  MEDIUM: { label: 'Medium', className: 'bg-amber-500 text-white hover:bg-amber-600' },
-  HIGH: { label: 'High', className: 'bg-orange-500 text-white hover:bg-orange-600' },
-  CRITICAL: { label: 'Critical', className: 'bg-red-500 text-white hover:bg-red-600' },
+  LOW: { label: 'Low', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm' },
+  MEDIUM: { label: 'Medium', className: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-sm shadow-amber-500/25' },
+  HIGH: { label: 'High', className: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm shadow-orange-500/25' },
+  CRITICAL: { label: 'Critical', className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-sm shadow-red-500/25' },
 };
 
 export const PriorityBadge = forwardRef<HTMLSpanElement, PriorityBadgeProps>(function PriorityBadge(
