@@ -25,17 +25,44 @@ export interface AIResponse {
 
 export class AIService {
   private client: OllamaClient;
-  private defaultSystemPrompt = `You are a helpful AI assistant for a ticket management system called "Tickets Wave".
+  private defaultSystemPrompt = `You are a senior AI support assistant for "Tickets Wave" - a local ticket management system for support teams.
 
-Your role is to help support managers:
-- Analyze tickets and provide insights
-- Suggest actions and priorities
-- Summarize complex tickets
-- Identify patterns and potential issues
-- Help with ticket organization
+YOUR EXPERTISE:
+- Ticket prioritization and triage
+- SLA risk assessment
+- Pattern recognition in support issues
+- Actionable recommendations
 
-Be concise, practical, and actionable in your responses. Use bullet points when appropriate.
-If you're unsure about something, ask clarifying questions.`;
+TICKET ANALYSIS FRAMEWORK:
+When analyzing tickets, always consider:
+1. PRIORITY: CRITICAL > HIGH > MEDIUM > LOW
+2. URGENCY: Stale tickets (7+ days no activity) need immediate attention
+3. SLA RISK: Waiting Client 3+ days, In Progress 7+ days, Blocked status
+4. BUSINESS IMPACT: Critical/High priority + stale = highest risk
+
+DATING CONVENTIONS:
+- "Created X days ago" - ticket age
+- "Last activity X days ago" - staleness
+- "Stale" = 7+ days without activity
+- "At risk" = approaching SLA breach
+
+YOUR RESPONSES SHOULD:
+- Be concise and structured (use bullet points)
+- Provide specific, actionable recommendations
+- Reference exact ticket details (title, priority, age)
+- Highlight risks with clear reasoning
+- Suggest priority when asked
+
+EXAMPLE OUTPUT:
+Top 3 Focus Areas:
+1. [CRITICAL] Login failure - 5 days stale (Urgent: affects 50+ users)
+2. [HIGH] Payment gateway timeout - BLOCKED (Awaiting vendor response)
+3. [HIGH] Onboarding flow bugs - 12 days stale (SLA risk)
+
+If asked about priority, explain your reasoning based on:
+- User impact (number of users, severity)
+- Business impact (revenue, reputation)
+- Time sensitivity (SLA, age, status)`;
 
   constructor(private ollamaUrl: string = 'http://localhost:11434') {
     this.client = createOllamaClient(ollamaUrl);
@@ -233,7 +260,7 @@ Format as a numbered list with brief explanations.`;
   }
 
   /**
-   * Analyze multiple tickets for insights
+   * Analyze multiple tickets for insights with full context
    */
   async analyzeTickets(ticketIds?: string[]): Promise<AIResponse> {
     const settings = await this.getSettings();
@@ -253,20 +280,58 @@ Format as a numbered list with brief explanations.`;
       };
     }
 
-    const ticketsSummary = contexts
-      .map(c => `- [${c.ticket.status}] ${c.ticket.title} (Priority: ${c.ticket.priority})`)
-      .join('\n');
+    // Build detailed ticket information for analysis
+    const now = new Date();
+    const ticketsDetailed = contexts.map(c => {
+      const daysSinceActivity = Math.floor(
+        (now.getTime() - new Date(c.ticket.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const daysSinceCreated = Math.floor(
+        (now.getTime() - new Date(c.ticket.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
 
-    const prompt = `Analyze these ${contexts.length} tickets and provide:
-1. Key patterns or themes you notice
-2. Tickets that need immediate attention (explain why)
-3. Any blocked or stuck tickets that need intervention
-4. Overall recommendations for prioritization
+      return {
+        id: c.ticket.id,
+        title: c.ticket.title,
+        description: c.ticket.description || 'No description',
+        status: c.ticket.status,
+        priority: c.ticket.priority,
+        tags: c.ticket.tags.join(', ') || 'None',
+        daysSinceActivity,
+        daysSinceCreated,
+        activityCount: c.activitySummary.total,
+        lastActivity: new Date(c.ticket.lastActivityAt).toLocaleDateString(),
+      };
+    });
 
-Tickets:
-${ticketsSummary}
+    // Sort by priority and staleness
+    const sortedTickets = [...ticketsDetailed].sort((a, b) => {
+      const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 999;
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 999;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return b.daysSinceActivity - a.daysSinceActivity;
+    });
 
-Be concise and specific.`;
+    const ticketsText = sortedTickets.map(t =>
+      `[${t.priority}] ${t.status} | ${t.title}
+      Description: ${t.description.substring(0, 100)}${t.description.length > 100 ? '...' : ''}
+      Age: ${t.daysSinceCreated}d old | Stale: ${t.daysSinceActivity}d since activity
+      Tags: ${t.tags} | Activities: ${t.activityCount}`
+    ).join('\n\n');
+
+    const prompt = `You are analyzing ${contexts.length} tickets in a support system.
+
+TICKETS TO ANALYZE:
+${ticketsText}
+
+For your analysis, consider:
+1. PRIORITY ANALYSIS: Which tickets need immediate attention based on priority, age, and staleness
+2. SLA RISK: Identify tickets at risk (stale for 7+ days, waiting too long, blocked)
+3. PATTERNS: Common themes, similar issues, or systemic problems
+4. ACTION ITEMS: Specific next steps for each critical/high priority ticket
+
+Provide a structured analysis with clear sections and actionable recommendations.`;
 
     const response = await this.client.chat({
       model: settings.ollamaModel,
@@ -291,31 +356,85 @@ Be concise and specific.`;
   }
 
   /**
-   * Generate a daily briefing
+   * Generate a daily briefing with full ticket context
    */
   async dailyBriefing(): Promise<AIResponse> {
     const settings = await this.getSettings();
     const contexts = await getActiveTicketsForBriefing();
 
+    const now = new Date();
     const critical = contexts.filter(c => c.ticket.priority === 'CRITICAL');
     const high = contexts.filter(c => c.ticket.priority === 'HIGH');
     const blocked = contexts.filter(c => c.ticket.status === 'BLOCKED');
     const waiting = contexts.filter(c => c.ticket.status === 'WAITING_CLIENT');
 
-    const prompt = `Generate a daily briefing for a support manager with ${contexts.length} active tickets:
+    // Build detailed ticket list with urgency indicators
+    const urgentTickets = [];
 
-Breakdown:
-- ${critical.length} critical tickets
-- ${high.length} high priority tickets
-- ${blocked.length} blocked tickets
-- ${waiting.length} waiting on client
+    for (const c of contexts) {
+      const daysSinceActivity = Math.floor(
+        (now.getTime() - new Date(c.ticket.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const daysSinceCreated = Math.floor(
+        (now.getTime() - new Date(c.ticket.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
 
-Provide:
-1. A brief overview of the current situation
-2. Top 3 tickets to focus on today (with reasons)
-3. Any tickets at risk of going stale
+      // Flag tickets needing attention
+      let urgencyFlags = [];
+      if (c.ticket.priority === 'CRITICAL') urgencyFlags.push('CRITICAL');
+      if (c.ticket.priority === 'HIGH') urgencyFlags.push('HIGH');
+      if (c.ticket.status === 'BLOCKED') urgencyFlags.push('BLOCKED');
+      if (daysSinceActivity >= 7) urgencyFlags.push(`STALE ${daysSinceActivity}d`);
+      if (c.ticket.status === 'WAITING_CLIENT' && daysSinceActivity >= 3) urgencyFlags.push(`WAITING ${daysSinceActivity}d`);
 
-Keep it under 150 words total.`;
+      if (urgencyFlags.length > 0) {
+        urgentTickets.push({
+          id: c.ticket.id,
+          title: c.ticket.title,
+          status: c.ticket.status,
+          priority: c.ticket.priority,
+          description: c.ticket.description?.substring(0, 80) || 'No description',
+          urgency: urgencyFlags.join(' | '),
+          daysSinceActivity,
+          daysSinceCreated,
+        });
+      }
+    }
+
+    // Sort by urgency
+    urgentTickets.sort((a, b) => {
+      const priorityScore = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+      const aScore = priorityScore[a.priority as keyof typeof priorityScore] || 0;
+      const bScore = priorityScore[b.priority as keyof typeof priorityScore] || 0;
+      if (aScore !== bScore) return bScore - aScore;
+      return b.daysSinceActivity - a.daysSinceActivity;
+    });
+
+    const topTickets = urgentTickets.slice(0, 10).map(t =>
+      `[${t.priority}] ${t.status}
+       ${t.title}
+       ${t.description}
+       Urgency: ${t.urgency}`
+    ).join('\n\n---\n\n');
+
+    const prompt = `You are a senior support manager's AI assistant. Generate a concise daily briefing.
+
+CURRENT SITUATION:
+- Total active tickets: ${contexts.length}
+- Critical priority: ${critical.length}
+- High priority: ${high.length}
+- Blocked: ${blocked.length}
+- Waiting on client: ${waiting.length}
+
+TICKETS REQUIRING ATTENTION (${urgentTickets.length} total):
+${urgentTickets.length > 0 ? topTickets : 'No urgent tickets at this time.'}
+
+Provide a structured briefing with:
+1. OVERVIEW: 2-3 sentence summary of current situation
+2. FOCUS TODAY: Top 3-5 tickets to work on with brief reasons
+3. RISK ALERT: Any tickets at risk (stale 7+ days, waiting too long, blocked)
+
+Keep it under 200 words. Be specific and actionable.`;
 
     const response = await this.client.chat({
       model: settings.ollamaModel,
