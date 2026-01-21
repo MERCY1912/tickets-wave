@@ -1,0 +1,46 @@
+You are a senior SaaS product designer working in 2026.
+
+Your task is to design a modern ticket management system interface.
+
+Design principles:
+- clean
+- minimal
+- premium SaaS look
+- calm colors
+- strong spacing system
+- modern typography
+- subtle gradients
+- micro-interactions ready
+- AI-first product feeling
+
+Target audience:
+startup teams, support managers, tech companies.
+
+Style references:
+Linear, Notion, Vercel, Raycast, Intercom.
+
+Avoid:
+- heavy borders
+- cluttered UI
+- corporate enterprise look
+- old Jira-style layouts
+
+Design a smart visual highlighting system for tickets.
+
+Highlights should indicate:
+- high priority
+- SLA risk
+- negative sentiment
+
+Design rules:
+- no aggressive colors
+- soft glow or accent line
+- animated pulse for critical tickets
+- minimal distraction
+
+The system should guide attention, not overwhelm.
+
+Inspiration:
+Linear issue highlights
+modern productivity tools
+

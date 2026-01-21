@@ -18,14 +18,105 @@ interface TicketCardProps {
   ticket: Ticket;
 }
 
-function MoreIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
+// Highlight types for visual attention
+interface TicketHighlight {
+  type: 'priority' | 'sla-risk' | 'sentiment' | null;
+  level: 'subtle' | 'moderate' | 'critical';
+}
+
+// Calculate ticket highlight based on priority, age, and status
+function getTicketHighlight(ticket: Ticket): TicketHighlight {
+  const daysSinceActivity = Math.floor(
+    (Date.now() - new Date(ticket.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24)
   );
+
+  // Critical priority - most urgent
+  if (ticket.priority === 'CRITICAL') {
+    return { type: 'priority', level: 'critical' };
+  }
+
+  // High priority
+  if (ticket.priority === 'HIGH') {
+    return { type: 'priority', level: 'moderate' };
+  }
+
+  // Blocked status - negative sentiment
+  if (ticket.status === 'BLOCKED') {
+    return { type: 'sentiment', level: 'moderate' };
+  }
+
+  // SLA risk - stagnant tickets (no activity for 7+ days)
+  if (daysSinceActivity >= 7) {
+    return { type: 'sla-risk', level: daysSinceActivity >= 14 ? 'critical' : 'moderate' };
+  }
+
+  // Waiting too long (5+ days)
+  if (ticket.status === 'WAITING_CLIENT' && daysSinceActivity >= 5) {
+    return { type: 'sla-risk', level: 'subtle' };
+  }
+
+  return { type: null, level: 'subtle' };
+}
+
+// Get highlight styles based on type and level
+function getHighlightStyles(highlight: TicketHighlight) {
+  if (!highlight.type) return null;
+
+  const baseStyles = {
+    priority: {
+      subtle: {
+        glow: 'shadow-amber-100/50 dark:shadow-amber-900/20',
+        accent: 'bg-amber-100/50 dark:bg-amber-900/20',
+        border: 'border-amber-200/50 dark:border-amber-800/30',
+      },
+      moderate: {
+        glow: 'shadow-orange-200/60 dark:shadow-orange-900/30',
+        accent: 'bg-orange-100/60 dark:bg-orange-900/30',
+        border: 'border-orange-300/60 dark:border-orange-800/40',
+      },
+      critical: {
+        glow: 'shadow-red-300/70 dark:shadow-red-900/40',
+        accent: 'bg-red-100/70 dark:bg-red-900/40',
+        border: 'border-red-400/70 dark:border-red-800/50',
+      },
+    },
+    'sla-risk': {
+      subtle: {
+        glow: 'shadow-blue-100/50 dark:shadow-blue-900/20',
+        accent: 'bg-blue-50/50 dark:bg-blue-900/20',
+        border: 'border-blue-200/40 dark:border-blue-800/30',
+      },
+      moderate: {
+        glow: 'shadow-indigo-200/60 dark:shadow-indigo-900/30',
+        accent: 'bg-indigo-100/60 dark:bg-indigo-900/30',
+        border: 'border-indigo-300/60 dark:border-indigo-800/40',
+      },
+      critical: {
+        glow: 'shadow-violet-300/70 dark:shadow-violet-900/40',
+        accent: 'bg-violet-100/70 dark:bg-violet-900/40',
+        border: 'border-violet-400/70 dark:border-violet-800/50',
+      },
+    },
+    sentiment: {
+      subtle: {
+        glow: 'shadow-rose-100/50 dark:shadow-rose-900/20',
+        accent: 'bg-rose-50/50 dark:bg-rose-900/20',
+        border: 'border-rose-200/40 dark:border-rose-800/30',
+      },
+      moderate: {
+        glow: 'shadow-red-200/60 dark:shadow-red-900/30',
+        accent: 'bg-red-100/60 dark:bg-red-900/30',
+        border: 'border-red-300/60 dark:border-red-800/40',
+      },
+      critical: {
+        glow: 'shadow-red-300/70 dark:shadow-red-900/40',
+        accent: 'bg-red-100/70 dark:bg-red-900/40',
+        border: 'border-red-400/70 dark:border-red-800/50',
+      },
+    },
+  };
+
+  return baseStyles[highlight.type][highlight.level];
 }
 
 function CalendarIcon() {
@@ -39,8 +130,19 @@ function CalendarIcon() {
   );
 }
 
+function AlertIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 export function TicketCard({ ticket }: TicketCardProps) {
   const navigate = useNavigate();
+  const highlight = getTicketHighlight(ticket);
+  const highlightStyles = getHighlightStyles(highlight);
+  const gradient = statusGradient[ticket.status];
 
   // Generate assignee initials from ticket title
   const getInitials = (title: string) => {
@@ -52,7 +154,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
   };
 
   const assigneeInitials = getInitials(ticket.title);
-  const gradient = statusGradient[ticket.status];
+  const shouldPulse = highlight.level === 'critical';
 
   return (
     <motion.div
@@ -64,11 +166,27 @@ export function TicketCard({ ticket }: TicketCardProps) {
       className="relative"
       onClick={() => navigate(`/tickets/${ticket.id}`)}
     >
-      <div className="bg-white dark:bg-card rounded-[20px] p-4 transition-all duration-300 cursor-pointer group relative overflow-hidden border border-gray-200/50 dark:border-gray-800/50 hover:border-violet-200/50 dark:hover:border-violet-800/30"
+      <div
+        className={`bg-white dark:bg-card rounded-[20px] p-4 transition-all duration-300 cursor-pointer group relative overflow-hidden border ${
+          highlightStyles
+            ? `${highlightStyles.border} ${highlightStyles.accent}`
+            : 'border-gray-200/50 dark:border-gray-800/50 hover:border-violet-200/50 dark:hover:border-violet-800/30'
+        }`}
         style={{
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
+          boxShadow: highlightStyles
+            ? `0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03), 0 0 0 1px ${highlightStyles.accent.split(' ')[0].replace('bg-', '')}20`
+            : '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
         }}
       >
+        {/* Subtle accent glow on top for highlighted tickets */}
+        {highlight && highlightStyles && (
+          <motion.div
+            className={`absolute top-0 left-4 right-4 h-[1px] ${highlightStyles.accent} rounded-full`}
+            animate={shouldPulse ? { opacity: [0.4, 0.8, 0.4] } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        )}
+
         {/* Gradient Border - appears on hover */}
         <div className="absolute inset-0 rounded-[20px] p-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="w-full h-full rounded-[20px] bg-gradient-to-r from-violet-500 via-violet-500 to-indigo-500" />
@@ -105,11 +223,49 @@ export function TicketCard({ ticket }: TicketCardProps) {
             </p>
           )}
 
-          {/* Footer - Assignee + Date */}
+          {/* Footer - Assignee + Date + Highlight indicator */}
           <div className="flex items-center justify-between">
-            {/* Assignee Avatar - Premium gradient */}
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white dark:ring-gray-800">
-              {assigneeInitials}
+            <div className="flex items-center gap-2">
+              {/* Assignee Avatar - Premium gradient */}
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white dark:ring-gray-800">
+                {assigneeInitials}
+              </div>
+
+              {/* Highlight indicator icon */}
+              {highlight && highlight.type && (
+                <motion.div
+                  className={`h-5 w-5 rounded-lg flex items-center justify-center ${
+                    highlight.type === 'priority'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                      : highlight.type === 'sla-risk'
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
+                  }`}
+                  animate={shouldPulse ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  title={
+                    highlight.type === 'priority'
+                      ? 'High priority ticket'
+                      : highlight.type === 'sla-risk'
+                      ? 'At risk of SLA breach'
+                      : 'Needs attention'
+                  }
+                >
+                  {highlight.type === 'priority' ? (
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="m2 17 10 5 10-5" />
+                    </svg>
+                  ) : highlight.type === 'sla-risk' ? (
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 12" />
+                    </svg>
+                  ) : (
+                    <AlertIcon />
+                  )}
+                </motion.div>
+              )}
             </div>
 
             {/* Date */}
