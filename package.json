@@ -1,0 +1,35 @@
+{
+  "name": "tickets-wave-beta",
+  "version": "1.0.0",
+  "description": "Local desktop ticket management system with AI assistant",
+  "private": true,
+  "workspaces": [
+    "electron",
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:electron\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:electron": "npm run dev --workspace=electron",
+    "build": "npm run build --workspace=frontend && npm run build --workspace=backend && npm run build --workspace=electron",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:electron": "npm run build --workspace=electron",
+    "prisma:generate": "npm run prisma:generate --workspace=backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace=backend",
+    "prisma:studio": "npm run prisma:studio --workspace=backend",
+    "lint": "npm run lint --workspaces",
+    "clean": "rm -rf node_modules */node_modules */dist */build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

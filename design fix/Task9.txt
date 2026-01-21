@@ -1,0 +1,17 @@
+Premium Borders & Interactions
+
+Task: Elevate the card designs with gradient borders. Instructions:
+
+AI Card Special Treatment: For the "AI Morning Report" card, instead of a solid border, use a thin gradient border (e.g., a linear gradient from purple to blue). Give it a very soft inner glow.
+
+Hover States: On regular ticket cards, change the border color from faint gray to a subtle primary color on hover.
+
+Typography Contrast
+
+Task: Implement a dual-font system for better visual hierarchy. Instructions:
+
+Keep the current sans-serif font for main headings and descriptions.
+
+Import a high-quality monospace font (like JetBrains Mono, Roboto Mono, or use the system ui-monospace).
+
+Apply this monospace font specifically to technical data points: Ticket IDs (e.g., the "2324:" prefix), timestamps/dates, and text inside status tags/badges.

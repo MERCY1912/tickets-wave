@@ -1,0 +1,9 @@
+Task: Replace the standard search input with a "Command Palette" trigger.
+
+Instructions:
+
+Visual Change: Change the search input to a button that looks like an input but has a keyboard shortcut badge on the right (display "⌘K" or "Ctrl+K").
+
+Styling: Make it look like a spotlight search bar: semi-transparent background (bg-slate-800/50), blur effect (backdrop-blur), and a subtle border.
+
+Behavior: The visual should imply that clicking it opens a global search modal (Raycast style) rather than just filtering the current list.

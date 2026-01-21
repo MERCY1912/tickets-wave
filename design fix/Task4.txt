@@ -1,0 +1,17 @@
+Enhance the UI with 2026 Design Trends:
+
+Bento Grid Layout: Organize the dashboard widgets into a highly structured "Bento Grid." Ensure gaps between cards are consistent (e.g., gap-6).
+
+AI Highlighting: Give the "Daily Briefing" card a subtle, premium look to signal it's AI-generated. Use a very faint linear gradient background (e.g., bg-gradient-to-br from-indigo-50 to-white) and add a ✨ icon next to the title.
+
+Sophisticated Typography: Use a high-quality sans-serif font family (like Inter or Geist Sans). Use Monospace font specifically for Ticket IDs and technical status tags to appeal to an engineering persona.
+
+Micro-interactions:
+
+Add transition-all duration-200 to all interactive elements.
+
+On hover, cards should slightly lift (-translate-y-1) and gain a deeper shadow (shadow-lg).
+
+Buttons should have a subtle active state (shrink slightly on click).
+
+Glass Effect: Make the top navigation bar sticky with a subtle blur effect (backdrop-blur-md and bg-white/80) so content scrolls smoothly underneath it.

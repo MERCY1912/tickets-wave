@@ -1,0 +1,7 @@
+Task: Add subtle "Aurora" or ambient light glows to the background layer to create depth. Instructions:
+
+Place large, highly blurred (e.g., blur-3xl or filter: blur(128px)) radial gradient orbs behind the main content container.
+
+Use colors consistent with your brand accent (e.g., faint indigo/purple/blue).
+
+Set their opacity very low (10-20%). They should act as colored light sources, not distinct shapes, giving the dashboard a soft, futuristic feel.

@@ -1,0 +1,7 @@
+Layout Fixes:
+
+Container Constrain: Wrap the main content area in a centered container with a max-width (e.g., max-w-[1600px] mx-auto) so cards don't stretch indefinitely on wide screens.
+
+Stats Alignment: Fix the "Stagnant" card. Arrange all 4 stat cards (Total, New, In Progress, Stagnant) in a single horizontal row using grid-cols-4. Ensure they have the same height.
+
+Ticket Card Density: The ticket card is too tall. Reduce the padding inside the ticket card to make it more compact. Move the tags (High, New) to be inline with the title or right below it, saving vertical space.

@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./tickets-wave.db"
+}
+
+model Ticket {
+  id            String        @id @default(uuid())
+  title         String
+  description   String?
+  status        String        @default("NEW")
+  priority      String        @default("MEDIUM")
+  tags          String        @default("[]")
+  aiNotes       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastActivityAt DateTime     @default(now())
+  activities    TicketActivity[]
+  reminders     Reminder[]
+}
+
+model TicketActivity {
+  id        String        @id @default(uuid())
+  ticketId  String
+  type      String
+  content   String
+  createdAt DateTime      @default(now())
+  ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Reminder {
+  id        String    @id @default(uuid())
+  ticketId  String?
+  remindAt  DateTime
+  message   String?
+  repeat    String?
+  triggered Boolean   @default(false)
+  autoType  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  ticket    Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Settings {
+  id                        String   @id @default("singleton")
+  ollamaUrl                 String   @default("http://localhost:11434")
+  ollamaModel               String   @default("qwen2.5:7b")
+  ollamaTemperature         Float    @default(0.7)
+  aiSystemPrompt            String?
+  reminderStagnantDays      Int      @default(5)
+  reminderWaitingClientDays Int      @default(3)
+  reminderHighPriorityDays  Int      @default(2)
+  reminderOldTicketDays     Int      @default(14)
+  aiAnalysisInterval        Int      @default(4)
+  theme                     String   @default("dark")
+  updatedAt                 DateTime @updatedAt
+}

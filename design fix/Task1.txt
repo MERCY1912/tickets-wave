@@ -1,0 +1,31 @@
+Role: You are a Senior UI/UX Designer and Frontend Engineer specializing in modern SaaS interfaces.
+
+Task: Redesign the current "Tickets Wave" dashboard to match the aesthetic of modern task management tools (like Asana, Linear, or the attached reference images).
+
+Design System Rules:
+
+Color Palette: Move away from stark white everywhere. Use a very light grey (e.g., #F4F5F7 or #F9FAFC) for the main app background. Use pure white (#FFFFFF) only for content cards (sidebar, widgets, ticket list).
+
+Shapes: Apply border-radius: 16px to all main containers and cards. Use border-radius: 8px for buttons and inputs. The look should be "soft" and approachable.
+
+Depth: Remove heavy borders. Instead, use subtle drop shadows (e.g., box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05)) to separate cards from the background.
+
+Typography: Use a clean sans-serif font (Inter, Roboto, or SF Pro). Increase the visual hierarchy: make headings (h1, h2) bold and dark (#111827), and secondary text (dates, IDs) medium grey (#6B7280) and smaller.
+
+Spacing: Increase padding inside cards. Use at least 24px (p-6) of internal padding for the dashboard widgets to let the content breathe.
+
+Task: Refactor the Sidebar navigation.
+
+Instructions:
+
+Visual Separation: Make the sidebar a distinct distinct floating panel or a fixed column with a white background.
+
+Menu Items: Transform the plain text links into high-quality navigation items. Each item should have:
+
+A modern icon (outline style, e.g., Heroicons or Lucide).
+
+Text with good spacing from the icon (gap: 12px).
+
+Active State: When active, the item should have a light blue background (or primary color tint) with a bold primary colored text and a colored vertical indicator on the left (as seen in the "ProTasks" reference).
+
+Profile/Bottom: Move the "Settings" or User Profile to the very bottom, separated by a subtle divider.

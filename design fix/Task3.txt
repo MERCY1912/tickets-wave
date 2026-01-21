@@ -1,0 +1,21 @@
+Task: Transform the "Recent Tickets" list into a Card-based view (or a highly styled list).
+
+Instructions:
+
+Card Style: Instead of a table row, create an individual card for each ticket.
+
+Card Anatomy:
+
+Header: Ticket Title (Bold) + Three-dot menu icon.
+
+Body: A short excerpt of the description (2 lines max, truncated).
+
+Footer: Use a Flexbox row to show:
+
+Tags: Colored pill-shaped badges for Priority (e.g., Red bg/Red text for High) and Status.
+
+Assignee: An avatar circle or initials.
+
+Date: A small date indicator with a calendar icon.
+
+Interactivity: Add a hover effect where the card lifts slightly (transform: translateY(-2px)) and the shadow gets stronger.

@@ -1,0 +1,7 @@
+Task: Replace the flat solid background with a subtle technical pattern. Instructions:
+
+Set the main app background color to a very light off-white/grey (e.g., #F8FAFC in light mode or #0F172A in dark mode).
+
+Overlay a repeating SVG pattern of micro-dots or a very fine grid.
+
+Crucial: The pattern must be extremely subtle. Use a color that is only 5-10% darker/lighter than the background hue. It should feel like texture, not noise. (Example technique: using CSS mask-image with a dot pattern or a faint repeating radial gradient).
