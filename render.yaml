@@ -18,5 +18,5 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        # Update this after deploying frontend
+        # Vercel frontend URL
         value: https://tickets-wave.vercel.app
