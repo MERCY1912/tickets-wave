@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String          @id @default(uuid())
+  email        String          @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  tickets    Ticket[]
+  activities TicketActivity[]
+  reminders  Reminder[]
+  todos      Todo[]
+  settings   Settings?
+}
+
+model Ticket {
+  id            String          @id @default(uuid())
+  title         String
+  description   String?
+  status        String          @default("NEW")
+  priority      String          @default("MEDIUM")
+  tags          String          @default("[]")
+  aiNotes       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  lastActivityAt DateTime       @default(now())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  activities    TicketActivity[]
+  reminders     Reminder[]
+  todos         Todo[]
+
+  @@index([userId])
+}
+
+model TicketActivity {
+  id        String        @id @default(uuid())
+  ticketId  String
+  type      String
+  content   String
+  createdAt DateTime      @default(now())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([ticketId])
+}
+
+model Reminder {
+  id        String    @id @default(uuid())
+  ticketId  String?
+  remindAt  DateTime
+  message   String?
+  repeat    String?
+  triggered Boolean   @default(false)
+  autoType  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticket    Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Todo {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  priority    String    @default("MEDIUM")
+  completed   Boolean   @default(false)
+  ticketId    String?
+  source      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticket      Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Settings {
+  id                        String   @id @default(uuid())
+  userId                    String   @unique
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // DeepSeek API Configuration
+  deepseekApiKey            String?
+  deepseekModel             String   @default("deepseek-chat")
+  deepseekTemperature       Float    @default(0.7)
+  aiSystemPrompt            String?
+
+  reminderStagnantDays      Int      @default(5)
+  reminderWaitingClientDays Int     @default(3)
+  reminderHighPriorityDays  Int      @default(2)
+  reminderOldTicketDays     Int      @default(14)
+  aiAnalysisInterval        Int      @default(4)
+  theme                     String   @default("dark")
+  updatedAt                 DateTime @updatedAt
+
+  @@index([userId])
+}

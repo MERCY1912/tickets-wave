@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "build:skip-ts": "vite build",
     "build:prod": "tsc --project tsconfig.prod.json && vite build",
-    "vercel-build": "vite build",
+    "vercel-build": "npx prisma generate && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx",
     "type-check": "tsc --noEmit"
@@ -17,17 +17,25 @@
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@libsql/client": "^0.8.0",
+    "@prisma/adapter-libsql": "^6.1.0",
+    "@prisma/client": "^6.1.0",
+    "bcryptjs": "^3.0.3",
     "date-fns": "^3.0.6",
     "framer-motion": "^10.18.0",
+    "jsonwebtoken": "^9.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.21.1",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/react": "^18.2.47",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.18.0",
@@ -38,6 +46,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.33",
+    "prisma": "^6.1.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.11"
