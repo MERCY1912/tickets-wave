@@ -3,7 +3,7 @@
   "compilerOptions": {
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "skipLibCheck": true,
-    "types": ["vite/client"]
-  }
+    "skipLibCheck": true
+  },
+  "include": ["src", "src/vite-env.d.ts"]
 }
