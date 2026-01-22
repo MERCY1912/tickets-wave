@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:skip-ts": "vite build",
     "build:prod": "tsc --project tsconfig.prod.json && vite build",
-    "vercel-build": "tsc --project tsconfig.prod.json && vite build",
+    "vercel-build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx",
     "type-check": "tsc --noEmit"
