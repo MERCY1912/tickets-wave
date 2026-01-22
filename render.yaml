@@ -1,0 +1,22 @@
+services:
+  # Web Service (Backend API)
+  - type: web
+    name: tickets-wave-backend
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        # Local SQLite for now (change to Turso later)
+        value: file:./dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        # Update this after deploying frontend
+        value: https://tickets-wave.vercel.app
