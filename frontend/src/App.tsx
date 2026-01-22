@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './components/layout/index.js';
-import { Dashboard, Tickets, TicketDetails, Kanban, Calendar, AI, Settings } from './pages/index.js';
+import { Dashboard, Tickets, TicketDetails, Kanban, Calendar, AI, Settings, Login } from './pages/index.js';
+import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/index.js';
 
@@ -23,7 +24,18 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="tickets" element={<Tickets />} />
           <Route path="tickets/:id" element={<TicketDetails />} />

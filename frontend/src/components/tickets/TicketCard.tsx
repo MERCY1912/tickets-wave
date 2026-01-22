@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import type { Ticket } from '../../types/index.js';
 import { StatusBadge, PriorityBadge, Card } from '../ui/index.js';
 
-// Status gradient colors for premium look
+// Status gradient colors - pastel colors matching Kanban
 const statusGradient: Record<Ticket['status'], { from: string; to: string }> = {
   NEW: { from: '#8B5CF6', to: '#6366F1' },        // Violet to Indigo
   IN_PROGRESS: { from: '#06B6D4', to: '#14B8A6' }, // Cyan to Teal
   WAITING_CLIENT: { from: '#F59E0B', to: '#F97316' }, // Amber to Orange
-  BLOCKED: { from: '#EF4444', to: '#DC2626' },     // Red to Dark Red
-  DONE: { from: '#22C55E', to: '#16A34A' },       // Green to Dark Green
+  BLOCKED: { from: '#EF4444', to: '#F43F5E' },     // Red to Rose
+  DONE: { from: '#10B981', to: '#22C55E' },       // Emerald to Green
   FROZEN: { from: '#6B7280', to: '#4B5563' },     // Gray to Dark Gray
 };
 
@@ -189,7 +189,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
 
         {/* Gradient Border - appears on hover */}
         <div className="absolute inset-0 rounded-[20px] p-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="w-full h-full rounded-[20px] bg-gradient-to-r from-violet-500 via-violet-500 to-indigo-500" />
+          <div className="w-full h-full rounded-[20px] bg-gradient-to-r from-violet-300 via-violet-300 to-indigo-300" />
         </div>
 
         {/* Inner background - covers the gradient border */}
@@ -197,7 +197,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
 
         {/* Gradient Bottom Border - subtle accent */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-[2px] opacity-60 group-hover:opacity-100 transition-opacity duration-300 z-10 rounded-b-[20px]"
+          className="absolute bottom-0 left-0 right-0 h-[6px] opacity-80 group-hover:opacity-100 transition-all duration-300 z-10 rounded-b-[20px] shadow-lg"
           style={{
             background: `linear-gradient(to right, ${gradient.from}, ${gradient.to})`,
           }}
@@ -227,7 +227,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* Assignee Avatar - Premium gradient */}
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white dark:ring-gray-800">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white dark:ring-gray-800">
                 {assigneeInitials}
               </div>
 

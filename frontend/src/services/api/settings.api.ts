@@ -12,14 +12,14 @@ export const settingsApi = {
     return apiClient.put<Settings>('/settings', data);
   },
 
-  // Test Ollama connection
-  testOllama: (url?: string) => {
-    return apiClient.post<{ success: boolean; models?: string[]; error?: string }>('/settings/ollama/test', { url });
+  // Test AI connection
+  testAI: (apiKey?: string) => {
+    return apiClient.post<{ success: boolean; models?: string[]; error?: string }>('/settings/ai/test', { apiKey });
   },
 
-  // List Ollama models
-  getOllamaModels: () => {
-    return apiClient.get<{ models: string[] }>('/settings/ollama/models');
+  // List AI models
+  getAIModels: () => {
+    return apiClient.get<{ models: string[] }>('/settings/ai/models');
   },
 
   // Reset settings to defaults

@@ -108,7 +108,7 @@ export function MainLayout() {
       {/* Main App Container */}
       <div className="flex h-screen relative z-10">
         {/* Sidebar */}
-        <aside className="w-64 flex-shrink-0">
+        <aside className="w-96 flex-shrink-0">
           <Sidebar />
         </aside>
 

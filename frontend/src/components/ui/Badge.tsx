@@ -30,12 +30,12 @@ export interface StatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const statusConfig: Record<TicketStatus, { label: string; className: string }> = {
-  NEW: { label: 'New', className: 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm shadow-violet-500/25' },
-  IN_PROGRESS: { label: 'In Progress', className: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm shadow-cyan-500/25' },
-  WAITING_CLIENT: { label: 'Waiting', className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/25' },
-  BLOCKED: { label: 'Blocked', className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-sm shadow-red-500/25' },
-  DONE: { label: 'Done', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm shadow-emerald-500/25' },
-  FROZEN: { label: 'Frozen', className: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm' },
+  NEW: { label: 'New', className: 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border border-violet-200/50 dark:border-violet-800/30' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-cyan-100 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200/50 dark:border-cyan-800/30' },
+  WAITING_CLIENT: { label: 'Waiting', className: 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/30' },
+  BLOCKED: { label: 'Blocked', className: 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-800/30' },
+  DONE: { label: 'Done', className: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/30' },
+  FROZEN: { label: 'Frozen', className: 'bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/30' },
 };
 
 export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(function StatusBadge(
@@ -61,10 +61,10 @@ export interface PriorityBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 export const priorityConfig: Record<Priority, { label: string; className: string }> = {
-  LOW: { label: 'Low', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm' },
-  MEDIUM: { label: 'Medium', className: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-sm shadow-amber-500/25' },
-  HIGH: { label: 'High', className: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm shadow-orange-500/25' },
-  CRITICAL: { label: 'Critical', className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-sm shadow-red-500/25' },
+  LOW: { label: 'Low', className: 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/30' },
+  MEDIUM: { label: 'Medium', className: 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/30' },
+  HIGH: { label: 'High', className: 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-200/50 dark:border-orange-800/30' },
+  CRITICAL: { label: 'Critical', className: 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-800/30' },
 };
 
 export const PriorityBadge = forwardRef<HTMLSpanElement, PriorityBadgeProps>(function PriorityBadge(

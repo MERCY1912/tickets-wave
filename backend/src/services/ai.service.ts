@@ -1,5 +1,5 @@
 import { prisma } from '../utils/db.js';
-import { createOllamaClient, OllamaClient } from '../utils/ollama.js';
+import { createDeepSeekClient, DeepSeekClient } from '../utils/deepseek.js';
 import { buildTicketContext, formatContextAsText, getActiveTicketsForBriefing, buildMultipleTicketContexts } from '../utils/contextBuilder.js';
 
 export interface ChatMessage {
@@ -15,6 +15,7 @@ export interface ChatContext {
 export interface ChatOptions {
   message: string;
   context?: ChatContext;
+  userId: string;
 }
 
 export interface AIResponse {
@@ -24,7 +25,7 @@ export interface AIResponse {
 }
 
 export class AIService {
-  private client: OllamaClient;
+  private userId: string;
   private defaultSystemPrompt = `You are a senior AI support assistant for "Tickets Wave" - a local ticket management system for support teams.
 
 YOUR EXPERTISE:
@@ -64,37 +65,58 @@ If asked about priority, explain your reasoning based on:
 - Business impact (revenue, reputation)
 - Time sensitivity (SLA, age, status)`;
 
-  constructor(private ollamaUrl: string = 'http://localhost:11434') {
-    this.client = createOllamaClient(ollamaUrl);
+  constructor(userId: string) {
+    this.userId = userId;
   }
 
   /**
-   * Get current settings from database
+   * Get current settings from database for this user
    */
   private async getSettings() {
-    const settings = await prisma.settings.findUnique({
-      where: { id: 'singleton' },
+    const settings = await prisma.settings.findFirst({
+      where: { userId: this.userId },
     });
 
     return {
-      ollamaUrl: settings?.ollamaUrl || this.ollamaUrl,
-      ollamaModel: settings?.ollamaModel || 'qwen2.5:7b',
-      ollamaTemperature: settings?.ollamaTemperature ?? 0.7,
+      deepseekApiKey: settings?.deepseekApiKey || process.env.DEEPSEEK_API_KEY || '',
+      deepseekModel: settings?.deepseekModel || 'deepseek-chat',
+      deepseekTemperature: settings?.deepseekTemperature ?? 0.7,
       aiSystemPrompt: settings?.aiSystemPrompt || this.defaultSystemPrompt,
     };
   }
 
   /**
-   * Check if Ollama is available
+   * Get or create DeepSeek client
    */
-  async checkHealth(): Promise<{ healthy: boolean; models?: string[]; error?: string }> {
+  private async getClient(): Promise<DeepSeekClient> {
+    const settings = await this.getSettings();
+
+    if (!settings.deepseekApiKey) {
+      throw new Error('DeepSeek API key not configured. Please add your API key in Settings.');
+    }
+
+    return createDeepSeekClient(settings.deepseekApiKey);
+  }
+
+  /**
+   * Check if DeepSeek API is available
+   */
+  async checkHealth(settings?: any): Promise<{ healthy: boolean; models?: string[]; error?: string }> {
     try {
-      const healthy = await this.client.checkHealth();
-      if (!healthy) {
-        return { healthy: false, error: 'Ollama is not responding' };
+      const apiKey = settings?.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+
+      if (!apiKey) {
+        return { healthy: false, error: 'DeepSeek API key not configured' };
       }
 
-      const models = await this.client.listModels();
+      const client = createDeepSeekClient(apiKey);
+      const healthy = await client.checkHealth();
+
+      if (!healthy) {
+        return { healthy: false, error: 'DeepSeek API is not responding' };
+      }
+
+      const models = await client.listModels();
       return { healthy: true, models };
     } catch (error) {
       return {
@@ -109,11 +131,7 @@ If asked about priority, explain your reasoning based on:
    */
   async chat(options: ChatOptions): Promise<AIResponse> {
     const settings = await this.getSettings();
-
-    // Update client if URL changed
-    if (settings.ollamaUrl !== this.ollamaUrl) {
-      this.client = createOllamaClient(settings.ollamaUrl);
-    }
+    const client = await this.getClient();
 
     const messages: ChatMessage[] = [];
 
@@ -125,7 +143,7 @@ If asked about priority, explain your reasoning based on:
 
     // Add ticket context if provided
     if (options.context?.ticketId) {
-      const context = await buildTicketContext(options.context.ticketId);
+      const context = await buildTicketContext(options.context.ticketId, this.userId);
       if (context) {
         console.log('[AI Chat] Ticket context loaded:', context.ticket.title);
         messages.push({
@@ -147,25 +165,25 @@ If asked about priority, explain your reasoning based on:
       content: options.message,
     });
 
-    console.log('[AI Chat] Sending to Ollama:', {
-      model: settings.ollamaModel,
+    console.log('[AI Chat] Sending to DeepSeek:', {
+      model: settings.deepseekModel,
       messagesCount: messages.length,
       userMessage: options.message.substring(0, 100),
     });
 
     try {
-      const response = await this.client.chat({
-        model: settings.ollamaModel,
+      const response = await client.chat({
+        model: settings.deepseekModel,
         messages,
-        temperature: settings.ollamaTemperature,
+        temperature: settings.deepseekTemperature,
       });
 
-      console.log('[AI Chat] Response from Ollama:', response.substring(0, 200));
+      console.log('[AI Chat] Response from DeepSeek:', response.substring(0, 200));
 
       return {
         response,
         timestamp: new Date(),
-        model: settings.ollamaModel,
+        model: settings.deepseekModel,
       };
     } catch (error) {
       console.error('[AI Chat] Error:', error);
@@ -176,9 +194,10 @@ If asked about priority, explain your reasoning based on:
   /**
    * Generate a summary for a specific ticket
    */
-  async summarizeTicket(ticketId: string): Promise<AIResponse> {
+  async summarizeTicket(ticketId: string, userId: string): Promise<AIResponse> {
     const settings = await this.getSettings();
-    const context = await buildTicketContext(ticketId);
+    const client = await this.getClient();
+    const context = await buildTicketContext(ticketId, userId);
 
     if (!context) {
       throw new Error('Ticket not found');
@@ -191,8 +210,8 @@ If asked about priority, explain your reasoning based on:
 
 Keep your response under 200 words and use clear headings.`;
 
-    const response = await this.client.chat({
-      model: settings.ollamaModel,
+    const response = await client.chat({
+      model: settings.deepseekModel,
       messages: [
         {
           role: 'system',
@@ -207,7 +226,7 @@ Keep your response under 200 words and use clear headings.`;
           content: prompt,
         },
       ],
-      temperature: settings.ollamaTemperature,
+      temperature: settings.deepseekTemperature,
     });
 
     // Update ticket with AI notes
@@ -221,16 +240,17 @@ Keep your response under 200 words and use clear headings.`;
     return {
       response,
       timestamp: new Date(),
-      model: settings.ollamaModel,
+      model: settings.deepseekModel,
     };
   }
 
   /**
    * Generate actionable suggestions for a ticket
    */
-  async generateSuggestions(ticketId: string): Promise<AIResponse> {
+  async generateSuggestions(ticketId: string, userId: string): Promise<AIResponse> {
     const settings = await this.getSettings();
-    const context = await buildTicketContext(ticketId);
+    const client = await this.getClient();
+    const context = await buildTicketContext(ticketId, userId);
 
     if (!context) {
       throw new Error('Ticket not found');
@@ -244,8 +264,8 @@ Each suggestion should be:
 
 Format as a numbered list with brief explanations.`;
 
-    const response = await this.client.chat({
-      model: settings.ollamaModel,
+    const response = await client.chat({
+      model: settings.deepseekModel,
       messages: [
         {
           role: 'system',
@@ -260,27 +280,29 @@ Format as a numbered list with brief explanations.`;
           content: prompt,
         },
       ],
-      temperature: settings.ollamaTemperature,
+      temperature: settings.deepseekTemperature,
     });
 
     return {
       response,
       timestamp: new Date(),
-      model: settings.ollamaModel,
+      model: settings.deepseekModel,
     };
   }
 
   /**
    * Analyze multiple tickets for insights with full context
    */
-  async analyzeTickets(ticketIds?: string[]): Promise<AIResponse> {
+  async analyzeTickets(ticketIds?: string[], userId?: string): Promise<AIResponse> {
     const settings = await this.getSettings();
+    const client = await this.getClient();
+    const effectiveUserId = userId || this.userId;
 
     let contexts;
     if (ticketIds && ticketIds.length > 0) {
-      contexts = await buildMultipleTicketContexts(ticketIds);
+      contexts = await buildMultipleTicketContexts(ticketIds, effectiveUserId);
     } else {
-      contexts = await getActiveTicketsForBriefing();
+      contexts = await getActiveTicketsForBriefing(effectiveUserId);
     }
 
     console.log('[AI Analyze Tickets] Total tickets:', contexts.length);
@@ -290,7 +312,7 @@ Format as a numbered list with brief explanations.`;
       return {
         response: 'No tickets found to analyze. Please create some tickets first.',
         timestamp: new Date(),
-        model: settings.ollamaModel,
+        model: settings.deepseekModel,
       };
     }
 
@@ -335,6 +357,14 @@ Age: ${t.daysSinceCreated} days old | Stale: ${t.daysSinceActivity} days since a
 Tags: ${t.tags} | Activities: ${t.activityCount}`
     ).join('\n\n');
 
+    const critical = contexts.filter(c => c.ticket.priority === 'CRITICAL');
+    const high = contexts.filter(c => c.ticket.priority === 'HIGH');
+
+    const staleCount = contexts.filter(c => {
+      const days = Math.floor((now.getTime() - c.ticket.lastActivityAt.getTime()) / 86400000);
+      return days >= 7;
+    }).length;
+
     const prompt = `You are analyzing ${contexts.length} REAL tickets from the database.
 
 IMPORTANT: You MUST analyze the ACTUAL ticket data provided below. Do NOT use placeholder examples or fake tickets.
@@ -344,10 +374,7 @@ ${ticketsText}
 
 For your analysis, consider:
 1. PRIORITY ANALYSIS: Which tickets need immediate attention based on priority (${critical.length} critical, ${high.length} high)
-2. SLA RISK: Identify tickets at risk (stale 7+ days: ${contexts.filter(c => {
-      const days = Math.floor((now - new Date(c.ticket.lastActivityAt).getTime()) / 86400000);
-      return days >= 7;
-    }).length} tickets)
+2. SLA RISK: Identify tickets at risk (stale 7+ days: ${staleCount} tickets)
 3. PATTERNS: Common themes, similar issues, or systemic problems
 4. ACTION ITEMS: Specific next steps for each critical/high priority ticket
 
@@ -355,8 +382,8 @@ Provide a structured analysis with clear sections and actionable recommendations
 
     console.log('[AI Analyze Tickets] Prompt length:', prompt.length);
 
-    const response = await this.client.chat({
-      model: settings.ollamaModel,
+    const response = await client.chat({
+      model: settings.deepseekModel,
       messages: [
         {
           role: 'system',
@@ -367,7 +394,7 @@ Provide a structured analysis with clear sections and actionable recommendations
           content: prompt,
         },
       ],
-      temperature: settings.ollamaTemperature,
+      temperature: settings.deepseekTemperature,
     });
 
     console.log('[AI Analyze Tickets] Response received, length:', response.length);
@@ -375,16 +402,18 @@ Provide a structured analysis with clear sections and actionable recommendations
     return {
       response,
       timestamp: new Date(),
-      model: settings.ollamaModel,
+      model: settings.deepseekModel,
     };
   }
 
   /**
    * Generate a daily briefing with full ticket context
    */
-  async dailyBriefing(): Promise<AIResponse> {
+  async dailyBriefing(userId?: string): Promise<AIResponse> {
     const settings = await this.getSettings();
-    const contexts = await getActiveTicketsForBriefing();
+    const client = await this.getClient();
+    const effectiveUserId = userId || this.userId;
+    const contexts = await getActiveTicketsForBriefing(effectiveUserId);
 
     // DEBUG: Log what we got from database
     console.log('[AI Daily Briefing] Total tickets from DB:', contexts.length);
@@ -479,18 +508,39 @@ CURRENT SITUATION:
 ALL TICKETS IN DATABASE:
 ${topTickets}
 
-Based on these REAL tickets, provide:
-1. OVERVIEW: 2-3 sentence summary of current situation
-2. FOCUS TODAY: Top 3-5 tickets to work on with specific reasons from the data
-3. RISK ALERT: Any tickets at risk (stale 7+ days, waiting too long, blocked)
+Based on these REAL tickets, provide a structured morning report using this EXACT format:
 
-Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details.`;
+# 📊 OVERVIEW
+2-3 sentences about current situation
+
+# 🎯 FOCUS TODAY
+Work on these tickets today:
+
+1. **[CRITICAL] Ticket Title (ID: xxx)**
+   - **Why:** Specific reason from data
+   - **Action:** Concrete next step
+
+2. **[HIGH] Ticket Title (ID: xxx)**
+   - **Why:** Specific reason
+   - **Action:** Concrete next step
+
+# ⚠️ RISK ALERT
+Tickets needing attention:
+
+- **Ticket Title (ID: xxx)** - Risk: blocked for X days, impact: description
+- **Ticket Title (ID: xxx)** - Risk: stale 7+ days, impact: description
+
+# 💡 RECOMMENDATIONS
+- Suggested action 1
+- Suggested action 2
+
+Use ONLY the ticket data above. Reference actual ticket IDs and details.`;
 
     console.log('[AI Daily Briefing] Sending prompt to AI, length:', prompt.length);
-    console.log('[AI Daily Briefing] Model:', settings.ollamaModel);
+    console.log('[AI Daily Briefing] Model:', settings.deepseekModel);
 
-    const response = await this.client.chat({
-      model: settings.ollamaModel,
+    const response = await client.chat({
+      model: settings.deepseekModel,
       messages: [
         {
           role: 'system',
@@ -498,10 +548,10 @@ Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details
         },
         {
           role: 'user',
-      content: prompt,
-    },
-  ],
-      temperature: settings.ollamaTemperature,
+          content: prompt,
+        },
+      ],
+      temperature: settings.deepseekTemperature,
     });
 
     console.log('[AI Daily Briefing] AI response length:', response.length);
@@ -510,7 +560,7 @@ Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details
     return {
       response,
       timestamp: new Date(),
-      model: settings.ollamaModel,
+      model: settings.deepseekModel,
     };
   }
 
@@ -518,22 +568,29 @@ Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details
    * List available models
    */
   async listModels(): Promise<string[]> {
-    return this.client.listModels();
+    const client = await this.getClient();
+    return client.listModels();
   }
 
   /**
-   * Test Ollama connection
+   * Test DeepSeek connection
    */
-  async testConnection(url?: string): Promise<{ success: boolean; models?: string[]; error?: string }> {
-    const testClient = url ? createOllamaClient(url) : this.client;
-
+  async testConnection(apiKey?: string): Promise<{ success: boolean; models?: string[]; error?: string }> {
     try {
-      const healthy = await testClient.checkHealth();
+      const key = apiKey || process.env.DEEPSEEK_API_KEY;
+
+      if (!key) {
+        return { success: false, error: 'DeepSeek API key not provided' };
+      }
+
+      const client = createDeepSeekClient(key);
+      const healthy = await client.checkHealth();
+
       if (!healthy) {
         return { success: false, error: 'Connection failed' };
       }
 
-      const models = await testClient.listModels();
+      const models = await client.listModels();
       return { success: true, models };
     } catch (error) {
       return {
@@ -544,17 +601,18 @@ Use ONLY the ticket data above. Reference actual ticket IDs, titles, and details
   }
 }
 
-// Export singleton factory
-let aiServiceInstance: AIService | null = null;
+// Export per-user factory
+const aiServiceInstances = new Map<string, AIService>();
 
-export function getAIService(): AIService {
-  if (!aiServiceInstance) {
-    aiServiceInstance = new AIService();
+export function getAIService(userId: string): AIService {
+  if (!aiServiceInstances.has(userId)) {
+    aiServiceInstances.set(userId, new AIService(userId));
   }
-  return aiServiceInstance;
+  return aiServiceInstances.get(userId)!;
 }
 
-export function resetAIService(url?: string): AIService {
-  aiServiceInstance = new AIService(url);
-  return aiServiceInstance;
+export function resetAIService(userId: string): AIService {
+  const service = new AIService(userId);
+  aiServiceInstances.set(userId, service);
+  return service;
 }

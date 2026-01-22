@@ -1,16 +1,17 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { prisma } from '../utils/db.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { createReminderSchema, updateReminderSchema } from '../utils/validation.js';
 
 export const reminderRoutes = Router();
 
 // GET /api/reminders - List all reminders
-reminderRoutes.get('/', async (req: Request, res: Response) => {
+reminderRoutes.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   const triggered = req.query.triggered;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
   const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
-  const where: any = {};
+  const where: any = { userId: req.userId! };
   if (triggered !== undefined) {
     where.triggered = triggered === 'true';
   }
@@ -37,7 +38,7 @@ reminderRoutes.get('/', async (req: Request, res: Response) => {
   ]);
 
   // Parse tags for tickets
-  const remindersWithParsedTags = reminders.map(reminder => ({
+  const remindersWithParsedTags = reminders.map((reminder: any) => ({
     ...reminder,
     ticket: reminder.ticket ? {
       ...reminder.ticket,
@@ -57,11 +58,12 @@ reminderRoutes.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/reminders/due - Get due (not triggered) reminders
-reminderRoutes.get('/due', async (_req: Request, res: Response) => {
+reminderRoutes.get('/due', authenticateToken, async (req: AuthRequest, res: Response) => {
   const now = new Date();
 
   const reminders = await prisma.reminder.findMany({
     where: {
+      userId: req.userId!,
       triggered: false,
       remindAt: { lte: now },
     },
@@ -80,7 +82,7 @@ reminderRoutes.get('/due', async (_req: Request, res: Response) => {
   });
 
   // Parse tags for tickets
-  const remindersWithParsedTags = reminders.map(reminder => ({
+  const remindersWithParsedTags = reminders.map((reminder: any) => ({
     ...reminder,
     ticket: reminder.ticket ? {
       ...reminder.ticket,
@@ -92,12 +94,13 @@ reminderRoutes.get('/due', async (_req: Request, res: Response) => {
 });
 
 // GET /api/reminders/upcoming - Get upcoming reminders (next 7 days)
-reminderRoutes.get('/upcoming', async (_req: Request, res: Response) => {
+reminderRoutes.get('/upcoming', authenticateToken, async (req: AuthRequest, res: Response) => {
   const now = new Date();
   const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const reminders = await prisma.reminder.findMany({
     where: {
+      userId: req.userId!,
       triggered: false,
       remindAt: {
         gte: now,
@@ -119,7 +122,7 @@ reminderRoutes.get('/upcoming', async (_req: Request, res: Response) => {
   });
 
   // Parse tags for tickets
-  const remindersWithParsedTags = reminders.map(reminder => ({
+  const remindersWithParsedTags = reminders.map((reminder: any) => ({
     ...reminder,
     ticket: reminder.ticket ? {
       ...reminder.ticket,
@@ -131,9 +134,9 @@ reminderRoutes.get('/upcoming', async (_req: Request, res: Response) => {
 });
 
 // GET /api/reminders/:id - Get single reminder
-reminderRoutes.get('/:id', async (req: Request, res: Response) => {
-  const reminder = await prisma.reminder.findUnique({
-    where: { id: req.params.id },
+reminderRoutes.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const reminder = await prisma.reminder.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
     include: {
       ticket: {
         select: {
@@ -162,13 +165,14 @@ reminderRoutes.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/reminders - Create reminder
-reminderRoutes.post('/', async (req: Request, res: Response) => {
+reminderRoutes.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   const data = createReminderSchema.parse(req.body);
+  const userId = req.userId!;
 
-  // If ticketId is provided, verify ticket exists
+  // If ticketId is provided, verify ticket exists and belongs to user
   if (data.ticketId) {
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: data.ticketId },
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: data.ticketId, userId },
     });
 
     if (!ticket) {
@@ -179,6 +183,7 @@ reminderRoutes.post('/', async (req: Request, res: Response) => {
 
   const reminder = await prisma.reminder.create({
     data: {
+      userId,
       ticketId: data.ticketId,
       remindAt: new Date(data.remindAt),
       message: data.message,
@@ -208,11 +213,12 @@ reminderRoutes.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/reminders/:id - Update reminder
-reminderRoutes.put('/:id', async (req: Request, res: Response) => {
+reminderRoutes.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   const data = updateReminderSchema.parse(req.body);
+  const userId = req.userId!;
 
-  const existing = await prisma.reminder.findUnique({
-    where: { id: req.params.id },
+  const existing = await prisma.reminder.findFirst({
+    where: { id: req.params.id, userId },
   });
 
   if (!existing) {
@@ -252,9 +258,11 @@ reminderRoutes.put('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/reminders/:id/trigger - Mark reminder as triggered
-reminderRoutes.post('/:id/trigger', async (req: Request, res: Response) => {
-  const existing = await prisma.reminder.findUnique({
-    where: { id: req.params.id },
+reminderRoutes.post('/:id/trigger', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  const existing = await prisma.reminder.findFirst({
+    where: { id: req.params.id, userId },
   });
 
   if (!existing) {
@@ -284,6 +292,7 @@ reminderRoutes.post('/:id/trigger', async (req: Request, res: Response) => {
 
     await prisma.reminder.create({
       data: {
+        userId,
         ticketId: reminder.ticketId,
         remindAt: nextRemindAt,
         message: reminder.message,
@@ -303,9 +312,11 @@ reminderRoutes.post('/:id/trigger', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/reminders/:id - Delete reminder
-reminderRoutes.delete('/:id', async (req: Request, res: Response) => {
-  const existing = await prisma.reminder.findUnique({
-    where: { id: req.params.id },
+reminderRoutes.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  const existing = await prisma.reminder.findFirst({
+    where: { id: req.params.id, userId },
   });
 
   if (!existing) {
@@ -321,9 +332,11 @@ reminderRoutes.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/reminders/auto/generate - Generate automatic reminders based on rules
-reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
-  const settings = await prisma.settings.findUnique({
-    where: { id: 'singleton' },
+reminderRoutes.post('/auto/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  const settings = await prisma.settings.findFirst({
+    where: { userId },
   });
 
   if (!settings) {
@@ -340,6 +353,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
 
   const stagnantTickets = await prisma.ticket.findMany({
     where: {
+      userId,
       status: { in: ['NEW', 'IN_PROGRESS', 'BLOCKED'] },
       lastActivityAt: { lte: stagnantDate },
     },
@@ -348,6 +362,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
   for (const ticket of stagnantTickets) {
     const existing = await prisma.reminder.findFirst({
       where: {
+        userId,
         ticketId: ticket.id,
         autoType: 'stagnant',
         triggered: false,
@@ -357,6 +372,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
     if (!existing) {
       const reminder = await prisma.reminder.create({
         data: {
+          userId,
           ticketId: ticket.id,
           remindAt: now,
           message: `Ticket "${ticket.title}" has no activity for ${stagnantDays} days`,
@@ -373,6 +389,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
 
   const waitingTickets = await prisma.ticket.findMany({
     where: {
+      userId,
       status: 'WAITING_CLIENT',
       lastActivityAt: { lte: waitingDate },
     },
@@ -381,6 +398,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
   for (const ticket of waitingTickets) {
     const existing = await prisma.reminder.findFirst({
       where: {
+        userId,
         ticketId: ticket.id,
         autoType: 'waiting_client',
         triggered: false,
@@ -390,6 +408,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
     if (!existing) {
       const reminder = await prisma.reminder.create({
         data: {
+          userId,
           ticketId: ticket.id,
           remindAt: now,
           message: `Ticket "${ticket.title}" has been waiting on client for ${waitingDays} days`,
@@ -406,6 +425,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
 
   const highPriorityTickets = await prisma.ticket.findMany({
     where: {
+      userId,
       priority: { in: ['HIGH', 'CRITICAL'] },
       status: { notIn: ['DONE', 'FROZEN'] },
       lastActivityAt: { lte: highPriorityDate },
@@ -415,6 +435,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
   for (const ticket of highPriorityTickets) {
     const existing = await prisma.reminder.findFirst({
       where: {
+        userId,
         ticketId: ticket.id,
         autoType: 'high_priority',
         triggered: false,
@@ -424,6 +445,7 @@ reminderRoutes.post('/auto/generate', async (_req: Request, res: Response) => {
     if (!existing) {
       const reminder = await prisma.reminder.create({
         data: {
+          userId,
           ticketId: ticket.id,
           remindAt: now,
           message: `High priority ticket "${ticket.title}" has no activity for ${highPriorityDays} days`,

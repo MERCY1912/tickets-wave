@@ -17,27 +17,14 @@ if (process.env.NODE_ENV !== 'production') {
 // Initialize database with default settings
 export async function initializeDatabase(): Promise<void> {
   try {
-    const existingSettings = await prisma.settings.findUnique({
-      where: { id: 'singleton' },
-    });
+    // Check if database is accessible
+    await prisma.$connect();
 
-    if (!existingSettings) {
-      await prisma.settings.create({
-        data: {
-          id: 'singleton',
-          ollamaUrl: 'http://localhost:11434',
-          ollamaModel: 'qwen2.5:7b',
-          ollamaTemperature: 0.7,
-          reminderStagnantDays: 5,
-          reminderWaitingClientDays: 3,
-          reminderHighPriorityDays: 2,
-          reminderOldTicketDays: 14,
-          aiAnalysisInterval: 4,
-          theme: 'dark',
-        },
-      });
-    }
+    // Note: Settings initialization is handled per-user now,
+    // so we don't create a singleton settings record anymore
+    console.log('Database connected successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);
+    throw error;
   }
 }

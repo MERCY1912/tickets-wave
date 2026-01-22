@@ -316,7 +316,7 @@ export function TicketList() {
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-all duration-200 group"
                     >
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-sm shadow-violet-500/25">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow-sm shadow-violet-400/30">
                         {ticket.title.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -324,7 +324,7 @@ export function TicketList() {
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{ticket.description || 'No description'}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white">{ticket.status}</span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-violet-400 to-indigo-400 text-white">{ticket.status}</span>
                       </div>
                     </button>
                   ))}

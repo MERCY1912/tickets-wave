@@ -67,6 +67,29 @@ export const updateReminderSchema = z.object({
   triggered: z.boolean().optional(),
 });
 
+// Todo schemas
+export const TodoPriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+export const TodoSourceEnum = z.enum(['manual', 'ai_morning_report']);
+
+export const createTodoSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  priority: TodoPriorityEnum.optional(),
+  ticketId: z.string().uuid().optional(),
+  source: TodoSourceEnum.optional(),
+});
+
+export const updateTodoSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(),
+  priority: TodoPriorityEnum.optional(),
+  completed: z.boolean().optional(),
+});
+
+export const toggleTodoSchema = z.object({
+  completed: z.boolean(),
+});
+
 // AI schemas
 export const chatSchema = z.object({
   message: z.string().min(1).max(5000),
@@ -89,9 +112,9 @@ export const analyzeTicketsSchema = z.object({
 
 // Settings schemas
 export const updateSettingsSchema = z.object({
-  ollamaUrl: z.string().url().optional(),
-  ollamaModel: z.string().min(1).optional(),
-  ollamaTemperature: z.number().min(0).max(2).optional(),
+  deepseekApiKey: z.string().min(1).optional(),
+  deepseekModel: z.string().min(1).optional(),
+  deepseekTemperature: z.number().min(0).max(2).optional(),
   aiSystemPrompt: z.string().optional(),
   reminderStagnantDays: z.number().int().min(1).max(365).optional(),
   reminderWaitingClientDays: z.number().int().min(1).max(365).optional(),
@@ -101,8 +124,8 @@ export const updateSettingsSchema = z.object({
   theme: z.enum(['light', 'dark']).optional(),
 });
 
-export const testOllamaSchema = z.object({
-  url: z.string().url().optional(),
+export const testAIConnectionSchema = z.object({
+  apiKey: z.string().min(1).optional(),
 });
 
 // Query parameter schemas
@@ -115,4 +138,16 @@ export const ticketQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
   limit: z.string().transform(Number).refine(n => n > 0 && n <= 100).optional(),
   offset: z.string().transform(Number).refine(n => n >= 0).optional(),
+});
+
+// Auth schemas
+export const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(1).max(100).optional(),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
 });

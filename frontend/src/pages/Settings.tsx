@@ -5,10 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent, Button, Input } from '../comp
 
 export default function Settings() {
   const {
-    ollamaUrl,
-    ollamaModel,
-    ollamaTemperature,
+    deepseekModel,
+    deepseekTemperature,
     aiSystemPrompt,
+    hasApiKey,
     reminderStagnantDays,
     reminderWaitingClientDays,
     reminderHighPriorityDays,
@@ -19,7 +19,8 @@ export default function Settings() {
     error,
     fetchSettings,
     updateSettings,
-    testOllama,
+    testAIConnection,
+    getAIModels,
     resetSettings,
     clearError,
   } = useSettingsStore();
@@ -27,11 +28,12 @@ export default function Settings() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const [formData, setFormData] = useState({
-    ollamaUrl: ollamaUrl,
-    ollamaModel: ollamaModel,
-    ollamaTemperature: ollamaTemperature,
+    deepseekApiKey: '',
+    deepseekModel: deepseekModel,
+    deepseekTemperature: deepseekTemperature,
     aiSystemPrompt: aiSystemPrompt || '',
     reminderStagnantDays: reminderStagnantDays,
     reminderWaitingClientDays: reminderWaitingClientDays,
@@ -47,9 +49,9 @@ export default function Settings() {
 
   useEffect(() => {
     setFormData({
-      ollamaUrl: ollamaUrl,
-      ollamaModel: ollamaModel,
-      ollamaTemperature: ollamaTemperature,
+      deepseekApiKey: '',
+      deepseekModel: deepseekModel,
+      deepseekTemperature: deepseekTemperature,
       aiSystemPrompt: aiSystemPrompt || '',
       reminderStagnantDays: reminderStagnantDays,
       reminderWaitingClientDays: reminderWaitingClientDays,
@@ -58,7 +60,7 @@ export default function Settings() {
       aiAnalysisInterval: aiAnalysisInterval,
       theme: theme,
     });
-  }, [ollamaUrl, ollamaModel, ollamaTemperature, aiSystemPrompt, reminderStagnantDays, reminderWaitingClientDays, reminderHighPriorityDays, reminderOldTicketDays, aiAnalysisInterval, theme]);
+  }, [deepseekModel, deepseekTemperature, aiSystemPrompt, reminderStagnantDays, reminderWaitingClientDays, reminderHighPriorityDays, reminderOldTicketDays, aiAnalysisInterval, theme]);
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -68,8 +70,13 @@ export default function Settings() {
   const handleSave = async () => {
     clearError();
     try {
-      await updateSettings(formData);
+      const updateData: Partial<typeof formData> = { ...formData };
+      if (!formData.deepseekApiKey) {
+        delete updateData.deepseekApiKey;
+      }
+      await updateSettings(updateData);
       setConnectionResult({ success: true, message: 'Settings saved successfully' });
+      setShowApiKey(false);
     } catch (err) {
       // Error handled by store
     }
@@ -80,7 +87,7 @@ export default function Settings() {
     setConnectionResult(null);
 
     try {
-      const result = await testOllama(formData.ollamaUrl);
+      const result = await testAIConnection(formData.deepseekApiKey || undefined);
       if (result.success && result.models) {
         setAvailableModels(result.models);
         setConnectionResult({ success: true, message: `Connected! Found ${result.models.length} models` });
@@ -146,7 +153,7 @@ export default function Settings() {
         </motion.div>
       )}
 
-      {/* Ollama Settings */}
+      {/* DeepSeek AI Settings */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -156,21 +163,45 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="text-gray-900 dark:text-foreground flex items-center gap-2">
               <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                <path d="M10 2a8 8 0 100-16 8 8 0 00016zm1 11a6 6 0 01-6 6H5a6 6 0 010-12V5a2 2 0 00-2-2V6a2 2 0 012-2h2a6 6 0 014 0v2z" />
               </svg>
-              Ollama AI Configuration
+              DeepSeek AI Configuration
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ollama URL</label>
-                <Input
-                  value={formData.ollamaUrl}
-                  onChange={(e) => handleChange('ollamaUrl', e.target.value)}
-                  placeholder="http://localhost:11434"
-                />
+            {/* API Key */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  DeepSeek API Key
+                </label>
+                <button
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="text-xs text-blue-500 hover:text-blue-400"
+                >
+                  {showApiKey ? 'Hide' : 'Show'}
+                </button>
               </div>
+              <Input
+                type={showApiKey ? 'text' : 'password'}
+                value={formData.deepseekApiKey}
+                onChange={(e) => handleChange('deepseekApiKey', e.target.value)}
+                placeholder="sk-..."
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Get your API key from{' '}
+                <a
+                  href="https://platform.deepseek.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-400 underline"
+                >
+                  platform.deepseek.com
+                </a>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex items-end">
                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="w-full">
                   <Button
@@ -183,6 +214,17 @@ export default function Settings() {
                   </Button>
                 </motion.div>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Temperature (0-2)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="2"
+                  value={formData.deepseekTemperature}
+                  onChange={(e) => handleChange('deepseekTemperature', parseFloat(e.target.value))}
+                />
+              </div>
             </div>
 
             {availableModels.length > 0 && (
@@ -193,8 +235,8 @@ export default function Settings() {
               >
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Model</label>
                 <select
-                  value={formData.ollamaModel}
-                  onChange={(e) => handleChange('ollamaModel', e.target.value)}
+                  value={formData.deepseekModel}
+                  onChange={(e) => handleChange('deepseekModel', e.target.value)}
                   className="flex h-10 w-full rounded-lg border border-gray-300 dark:border-input bg-white dark:bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition-all"
                 >
                   {availableModels.map((model) => (
@@ -206,16 +248,17 @@ export default function Settings() {
               </motion.div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Temperature (0-2)</label>
-              <Input
-                type="number"
-                step="0.1"
-                min="0"
-                max="2"
-                value={formData.ollamaTemperature}
-                onChange={(e) => handleChange('ollamaTemperature', parseFloat(e.target.value))}
-              />
+            {/* Available Models Info */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Available Models:</strong>
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                • deepseek-chat - Main chat model (recommended)
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">
+                • deepseek-coder - Coding assistant
+              </p>
             </div>
 
             <div>
@@ -345,7 +388,7 @@ export default function Settings() {
           </Button>
         </motion.div>
         <div className="flex gap-2">
-          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+          <motion.div whileHover={{ scale:1.01 }} whileTap={{ scale: 0.99 }}>
             <Button variant="ghost" onClick={() => fetchSettings()}>
               Reload
             </Button>

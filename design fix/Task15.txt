@@ -1,0 +1,82 @@
+TASK 2 — Improve the TOP BAR (HEADER FRAME)
+Current problem
+
+The top frame feels too static and “system-like”.
+
+It should feel like:
+
+command center
+
+context bar
+
+workspace header
+
+Not like a website navbar.
+
+Goal
+
+The top bar should:
+
+define the current context
+
+subtly anchor the interface
+
+support focus
+
+feel lightweight
+
+Design direction
+
+✅ Height: slim (not tall)
+✅ Background: slightly tinted or translucent
+✅ No strong borders
+✅ No heavy shadows
+
+Preferred techniques:
+
+very light blur (optional)
+
+soft bottom divider
+
+subtle background difference from content
+
+Examples:
+
+frosted glass feeling
+
+light elevation without shadow
+
+barely visible separation
+
+What the top bar should contain
+
+Left:
+
+current page title
+
+optional subtitle or context
+(e.g. “AI Assistant · Ticket analysis”)
+
+Center (optional):
+
+search
+
+command palette trigger
+
+Right:
+
+small icons only
+
+no big buttons
+
+quiet visual weight
+
+Typography rules
+
+Page title slightly larger than body
+
+Secondary text muted
+
+No bold overload
+
+The header should guide — not dominate.

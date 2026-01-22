@@ -10,7 +10,22 @@
       "Bash(git add:*)",
       "Bash(cmd:*)",
       "Bash(git config:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git clean:*)",
+      "Bash(npm run dev)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(tree:*)",
+      "Bash(wsl -e turso:*)",
+      "Bash(wsl:*)",
+      "Bash(npm run prisma:generate:*)",
+      "Bash(npx prisma migrate diff:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)"
     ]
   }
 }

@@ -4,10 +4,10 @@ import type { Settings } from '../types/index.js';
 
 interface SettingsState {
   // State
-  ollamaUrl: string;
-  ollamaModel: string;
-  ollamaTemperature: number;
+  deepseekModel: string;
+  deepseekTemperature: number;
   aiSystemPrompt: string | null;
+  hasApiKey: boolean;
   reminderStagnantDays: number;
   reminderWaitingClientDays: number;
   reminderHighPriorityDays: number;
@@ -22,24 +22,23 @@ interface SettingsState {
   // Actions
   fetchSettings: () => Promise<void>;
   updateSettings: (data: Partial<Settings>) => Promise<void>;
-  testOllama: (url?: string) => Promise<{ success: boolean; models?: string[]; error?: string }>;
-  getOllamaModels: () => Promise<string[]>;
+  testAIConnection: (apiKey?: string) => Promise<{ success: boolean; models?: string[]; error?: string }>;
+  getAIModels: () => Promise<string[]>;
   resetSettings: () => Promise<void>;
   clearError: () => void;
 }
 
-const defaultSettings: Settings = {
-  id: 'singleton',
-  ollamaUrl: 'http://localhost:11434',
-  ollamaModel: 'qwen2.5:7b',
-  ollamaTemperature: 0.7,
+const defaultSettings = {
+  deepseekModel: 'deepseek-chat',
+  deepseekTemperature: 0.7,
   aiSystemPrompt: null,
+  hasApiKey: false,
   reminderStagnantDays: 5,
   reminderWaitingClientDays: 3,
   reminderHighPriorityDays: 2,
   reminderOldTicketDays: 14,
   aiAnalysisInterval: 4,
-  theme: 'dark',
+  theme: 'dark' as const,
   updatedAt: new Date().toISOString(),
 };
 
@@ -78,9 +77,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
-  testOllama: async (url) => {
+  testAIConnection: async (apiKey) => {
     try {
-      return await settingsApi.testOllama(url);
+      return await settingsApi.testAI(apiKey);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection test failed';
       set({ error: errorMessage });
@@ -88,9 +87,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
-  getOllamaModels: async () => {
+  getAIModels: async () => {
     try {
-      const response = await settingsApi.getOllamaModels();
+      const response = await settingsApi.getAIModels();
       return response.models;
     } catch (error) {
       set({

@@ -33,10 +33,10 @@ interface BuiltContext {
 /**
  * Build a comprehensive context for a ticket to be used by AI
  */
-export async function buildTicketContext(ticketId: string): Promise<BuiltContext | null> {
+export async function buildTicketContext(ticketId: string, userId: string): Promise<BuiltContext | null> {
   try {
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: ticketId },
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: ticketId, userId },
       include: {
         activities: {
           orderBy: { createdAt: 'desc' },
@@ -72,7 +72,7 @@ export async function buildTicketContext(ticketId: string): Promise<BuiltContext
     };
 
     // Build activities context
-    const activities: ActivityContext[] = ticket.activities.map(a => ({
+    const activities: ActivityContext[] = ticket.activities.map((a: any) => ({
       id: a.id,
       type: a.type,
       content: a.content,
@@ -140,11 +140,13 @@ export function formatContextAsText(context: BuiltContext): string {
  */
 export async function buildMultipleTicketContexts(
   ticketIds: string[],
+  userId: string,
   limit: number = 20
 ): Promise<BuiltContext[]> {
   const tickets = await prisma.ticket.findMany({
     where: {
       id: { in: ticketIds.slice(0, limit) },
+      userId,
     },
     include: {
       activities: {
@@ -177,7 +179,7 @@ export async function buildMultipleTicketContexts(
       lastActivityAt: ticket.lastActivityAt,
     };
 
-    const activities: ActivityContext[] = ticket.activities.map(a => ({
+    const activities: ActivityContext[] = ticket.activities.map((a: any) => ({
       id: a.id,
       type: a.type,
       content: a.content,
@@ -206,9 +208,10 @@ export async function buildMultipleTicketContexts(
 /**
  * Get all active tickets for daily briefing
  */
-export async function getActiveTicketsForBriefing(): Promise<BuiltContext[]> {
+export async function getActiveTicketsForBriefing(userId: string): Promise<BuiltContext[]> {
   const tickets = await prisma.ticket.findMany({
     where: {
+      userId,
       status: {
         in: ['NEW', 'IN_PROGRESS', 'WAITING_CLIENT', 'BLOCKED'],
       },
@@ -246,7 +249,7 @@ export async function getActiveTicketsForBriefing(): Promise<BuiltContext[]> {
       lastActivityAt: ticket.lastActivityAt,
     };
 
-    const activities: ActivityContext[] = ticket.activities.map(a => ({
+    const activities: ActivityContext[] = ticket.activities.map((a: any) => ({
       id: a.id,
       type: a.type,
       content: a.content,

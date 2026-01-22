@@ -1,0 +1,93 @@
+TASK 1 — Improve the LEFT SIDEBAR
+Current problem
+
+The left sidebar looks too plain and white.
+It feels disconnected from the rest of the UI.
+It looks like a default layout column.
+
+Goal
+
+Make the sidebar feel:
+
+visually separated
+
+calmer than the main content
+
+slightly “in the background”
+
+but still premium and modern
+
+Design direction
+
+✅ Use tinted background, not pure white
+✅ Avoid strong borders
+✅ Avoid heavy shadows
+✅ Avoid dark mode look
+✅ Avoid boxed UI
+
+Preferred solution
+
+Use a very subtle cool-tinted background:
+
+Examples:
+
+rgba(90, 100, 160, 0.04)
+
+#f7f8fc
+
+#f8f9fb
+
+Optionally add a very soft vertical gradient:
+
+top: slightly stronger tint
+bottom: slightly lighter
+difference must be barely visible
+
+
+If the gradient is clearly visible — it is too strong.
+
+Sidebar structure improvements
+
+Add visual hierarchy:
+
+Top area
+
+App name or AI assistant name
+
+Optional small status text (e.g. “Ready”, “Online”)
+
+This creates presence
+
+Navigation area
+
+Items should not use heavy background fills
+
+Hover uses soft translucent background
+
+Active item uses:
+
+subtle glow
+
+or thin accent line
+
+or tiny indicator dot
+
+NOT full background highlight
+
+Bottom area
+
+Settings / profile
+
+Visually separated with spacing, not borders
+
+Spacing is more important than lines.
+
+Interaction rules
+
+Hover states must feel soft
+
+Border-radius around items (6–10px)
+
+No harsh contrasts
+
+No solid gray blocks

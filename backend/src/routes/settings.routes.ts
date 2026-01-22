@@ -1,24 +1,25 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { prisma } from '../utils/db.js';
-import { updateSettingsSchema, testOllamaSchema } from '../utils/validation.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { updateSettingsSchema, testAIConnectionSchema } from '../utils/validation.js';
 import { resetAIService } from '../services/ai.service.js';
 
 export const settingsRoutes = Router();
 
 // GET /api/settings - Get settings
-settingsRoutes.get('/', async (_req: Request, res: Response) => {
-  let settings = await prisma.settings.findUnique({
-    where: { id: 'singleton' },
+settingsRoutes.get('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
+  let settings = await prisma.settings.findFirst({
+    where: { userId },
   });
 
   // Create default settings if not exists
   if (!settings) {
     settings = await prisma.settings.create({
       data: {
-        id: 'singleton',
-        ollamaUrl: 'http://localhost:11434',
-        ollamaModel: 'qwen2.5:7b',
-        ollamaTemperature: 0.7,
+        userId,
+        deepseekModel: 'deepseek-chat',
+        deepseekTemperature: 0.7,
         reminderStagnantDays: 5,
         reminderWaitingClientDays: 3,
         reminderHighPriorityDays: 2,
@@ -29,16 +30,23 @@ settingsRoutes.get('/', async (_req: Request, res: Response) => {
     });
   }
 
-  res.json(settings);
+  // Don't expose the API key in the response
+  const { deepseekApiKey, ...settingsWithoutKey } = settings;
+
+  res.json({
+    ...settingsWithoutKey,
+    hasApiKey: !!settings.deepseekApiKey,
+  });
 });
 
 // PUT /api/settings - Update settings
-settingsRoutes.put('/', async (req: Request, res: Response) => {
+settingsRoutes.put('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
   const data = updateSettingsSchema.parse(req.body);
 
   // Get current settings
-  const current = await prisma.settings.findUnique({
-    where: { id: 'singleton' },
+  const current = await prisma.settings.findFirst({
+    where: { userId },
   });
 
   if (!current) {
@@ -48,89 +56,120 @@ settingsRoutes.put('/', async (req: Request, res: Response) => {
 
   // Update settings
   const settings = await prisma.settings.update({
-    where: { id: 'singleton' },
+    where: { id: current.id },
     data,
   });
 
-  // Reset AI service if URL changed
-  if (data.ollamaUrl && data.ollamaUrl !== current.ollamaUrl) {
-    resetAIService(data.ollamaUrl);
+  // Reset AI service if API key changed
+  if (data.deepseekApiKey && data.deepseekApiKey !== current.deepseekApiKey) {
+    resetAIService(userId);
   }
 
-  res.json(settings);
+  // Don't expose the API key in the response
+  const { deepseekApiKey, ...settingsWithoutKey } = settings;
+
+  res.json({
+    ...settingsWithoutKey,
+    hasApiKey: !!settings.deepseekApiKey,
+  });
 });
 
-// POST /api/settings/ollama/test - Test Ollama connection
-settingsRoutes.post('/ollama/test', async (req: Request, res: Response) => {
-  const data = testOllamaSchema.parse(req.body);
-
-  const testUrl = data.url || 'http://localhost:11434';
+// POST /api/settings/ai/test - Test DeepSeek connection
+settingsRoutes.post('/ai/test', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  const data = testAIConnectionSchema.parse(req.body);
 
   try {
-    const response = await fetch(`${testUrl}/api/tags`, {
-      signal: AbortSignal.timeout(5000),
+    const response = await fetch('https://api.deepseek.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${data.apiKey}`,
+      },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        error: `Ollama returned status ${response.status}`,
+        error: `DeepSeek returned status ${response.status}`,
       });
+      return;
     }
 
-    const responseData = await response.json() as { models?: Array<{ name: string }> };
+    const responseData = await response.json() as { data?: Array<{ id: string }> };
 
-    return res.json({
+    res.json({
       success: true,
-      models: responseData.models?.map((m) => m.name) || [],
+      models: responseData.data?.map((m) => m.id) || [],
     });
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Connection failed',
     });
   }
 });
 
-// GET /api/settings/ollama/models - List Ollama models
-settingsRoutes.get('/ollama/models', async (_req: Request, res: Response) => {
-  const settings = await prisma.settings.findUnique({
-    where: { id: 'singleton' },
+// GET /api/settings/ai/models - List DeepSeek models
+settingsRoutes.get('/ai/models', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
+
+  const settings = await prisma.settings.findFirst({
+    where: { userId },
   });
 
-  const ollamaUrl = settings?.ollamaUrl || 'http://localhost:11434';
+  const apiKey = settings?.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+
+  if (!apiKey) {
+    res.status(400).json({
+      error: 'DeepSeek API key not configured',
+    });
+    return;
+  }
 
   try {
-    const response = await fetch(`${ollamaUrl}/api/tags`, {
-      signal: AbortSignal.timeout(5000),
+    const response = await fetch('https://api.deepseek.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
-      return res.status(400).json({
-        error: `Ollama returned status ${response.status}`,
+      res.status(400).json({
+        error: `DeepSeek returned status ${response.status}`,
       });
+      return;
     }
 
-    const responseData = await response.json() as { models?: Array<{ name: string }> };
+    const responseData = await response.json() as { data?: Array<{ id: string }> };
 
-    return res.json({
-      models: responseData.models?.map((m) => m.name) || [],
+    res.json({
+      models: responseData.data?.map((m) => m.id) || [],
     });
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch models',
     });
   }
 });
 
 // DELETE /api/settings - Reset settings to defaults
-settingsRoutes.delete('/', async (_req: Request, res: Response) => {
+settingsRoutes.delete('/', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.userId!;
+
+  const current = await prisma.settings.findFirst({
+    where: { userId },
+  });
+
+  if (!current) {
+    res.status(404).json({ error: 'Settings not found' });
+    return;
+  }
+
   const settings = await prisma.settings.update({
-    where: { id: 'singleton' },
+    where: { id: current.id },
     data: {
-      ollamaUrl: 'http://localhost:11434',
-      ollamaModel: 'qwen2.5:7b',
-      ollamaTemperature: 0.7,
+      deepseekModel: 'deepseek-chat',
+      deepseekTemperature: 0.7,
       aiSystemPrompt: null,
       reminderStagnantDays: 5,
       reminderWaitingClientDays: 3,
@@ -142,7 +181,13 @@ settingsRoutes.delete('/', async (_req: Request, res: Response) => {
   });
 
   // Reset AI service
-  resetAIService(settings.ollamaUrl);
+  resetAIService(userId);
 
-  res.json(settings);
+  // Don't expose the API key in the response
+  const { deepseekApiKey, ...settingsWithoutKey } = settings;
+
+  res.json({
+    ...settingsWithoutKey,
+    hasApiKey: !!settings.deepseekApiKey,
+  });
 });

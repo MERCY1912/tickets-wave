@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAIStore, useTicketsStore } from '../store/index.js';
 import { Button } from '../components/ui/index.js';
 import { ticketsApi } from '../services/api/index.js';
+import MarkdownRenderer from '../components/MarkdownRenderer.js';
 
 // AI Status types
 type AIStatus = 'ready' | 'thinking' | 'analyzing';
@@ -11,7 +12,7 @@ export default function AI() {
   const { messages, loading, error, sendMessage, clearMessages } = useAIStore();
   const { tickets, fetchTickets } = useTicketsStore();
   const [input, setInput] = useState('');
-  const [selectedTicketId, setSelectedTicketId = useState<string | undefined>();
+  const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>();
   const [isSeeding, setIsSeeding] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,7 @@ export default function AI() {
                 {/* AI Avatar with status indicator */}
                 <div className="relative">
                   <motion.div
-                    className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/25"
+                    className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center shadow-lg shadow-violet-400/30"
                     animate={aiStatus === 'thinking' ? { scale: [1, 1.05, 1] } : {}}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
@@ -173,8 +174,8 @@ export default function AI() {
                     animate={{ scale: [1, 1.02, 1] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-3xl blur-2xl opacity-20 animate-pulse" />
-                    <div className="relative h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-xl shadow-violet-500/30">
+                    <div className="absolute inset-0 bg-gradient-to-r from-violet-400 to-indigo-400 rounded-3xl blur-2xl opacity-40 animate-pulse" />
+                    <div className="relative h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center shadow-xl shadow-violet-400/30">
                       <svg className="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M12 2L2 7l10 5 10-5-10-5z" />
                         <path d="m2 17 10 5 10-5" />
@@ -219,7 +220,13 @@ export default function AI() {
                           : 'bg-white/80 dark:bg-gray-800/60 text-gray-900 dark:text-gray-100 border border-violet-100/50 dark:border-violet-800/30 shadow-sm backdrop-blur-sm'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      {message.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      ) : (
+                        <MarkdownRenderer className="prose-p:text-sm prose-p:leading-relaxed prose-p:my-0">
+                          {message.content}
+                        </MarkdownRenderer>
+                      )}
                     </motion.div>
                   </motion.div>
                 ))}
@@ -288,7 +295,7 @@ export default function AI() {
                 <Button
                   onClick={handleSend}
                   disabled={!input.trim() || loading}
-                  className="h-11 px-5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/30 transition-all border-0"
+                  className="h-11 px-5 bg-gradient-to-r from-violet-400 to-indigo-400 text-violet-700 dark:text-violet-300 rounded-xl shadow-md shadow-violet-400/30 hover:shadow-lg hover:shadow-violet-400/40 transition-all border border-violet-300/30"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />

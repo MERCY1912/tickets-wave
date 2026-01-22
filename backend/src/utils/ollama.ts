@@ -53,6 +53,10 @@ export class OllamaClient {
     return this.baseUrl.replace(/\/$/, '');
   }
 
+  getUrl(): string {
+    return this.baseUrl;
+  }
+
   /**
    * Check if Ollama is running and accessible
    */

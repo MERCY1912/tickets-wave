@@ -3,6 +3,10 @@ export type TicketStatus = 'NEW' | 'IN_PROGRESS' | 'WAITING_CLIENT' | 'BLOCKED' 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ActivityType = 'NOTE' | 'STATUS_CHANGE' | 'COMMENT' | 'PRIORITY_CHANGE' | 'TAG_CHANGE' | 'AI_SUGGESTION';
 
+// Todo Types
+export type TodoPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type TodoSource = 'manual' | 'ai_morning_report' | null;
+
 export interface Ticket {
   id: string;
   title: string;
@@ -51,12 +55,32 @@ export interface Reminder {
   };
 }
 
+export interface Todo {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: TodoPriority;
+  completed: boolean;
+  ticketId: string | null;
+  source: TodoSource;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  ticket?: {
+    id: string;
+    title: string;
+    status: TicketStatus;
+    priority: Priority;
+    tags: string[];
+  };
+}
+
 export interface Settings {
   id: string;
-  ollamaUrl: string;
-  ollamaModel: string;
-  ollamaTemperature: number;
+  deepseekModel: string;
+  deepseekTemperature: number;
   aiSystemPrompt: string | null;
+  hasApiKey: boolean;
   reminderStagnantDays: number;
   reminderWaitingClientDays: number;
   reminderHighPriorityDays: number;
@@ -149,4 +173,19 @@ export interface UpdateReminderInput {
   message?: string;
   repeat?: 'none' | 'daily' | 'weekly' | 'monthly';
   triggered?: boolean;
+}
+
+export interface CreateTodoInput {
+  title: string;
+  description?: string;
+  priority?: TodoPriority;
+  ticketId?: string;
+  source?: TodoSource;
+}
+
+export interface UpdateTodoInput {
+  title?: string;
+  description?: string;
+  priority?: TodoPriority;
+  completed?: boolean;
 }

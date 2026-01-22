@@ -1,16 +1,17 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { prisma } from '../utils/db.js';
+import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { createActivitySchema } from '../utils/validation.js';
 
 export const activityRoutes = Router();
 
 // GET /api/activities - List all activities (with optional filtering)
-activityRoutes.get('/', async (req: Request, res: Response) => {
+activityRoutes.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   const ticketId = req.query.ticketId as string;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
   const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
-  const where: any = {};
+  const where: any = { userId: req.userId! };
   if (ticketId) {
     where.ticketId = ticketId;
   }
@@ -47,9 +48,9 @@ activityRoutes.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/activities/:id - Get single activity
-activityRoutes.get('/:id', async (req: Request, res: Response) => {
-  const activity = await prisma.ticketActivity.findUnique({
-    where: { id: req.params.id },
+activityRoutes.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const activity = await prisma.ticketActivity.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
     include: {
       ticket: {
         select: {
@@ -70,14 +71,15 @@ activityRoutes.get('/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/activities/tickets/:ticketId - Get activities for a specific ticket
-activityRoutes.get('/tickets/:ticketId', async (req: Request, res: Response) => {
+activityRoutes.get('/tickets/:ticketId', authenticateToken, async (req: AuthRequest, res: Response) => {
   const ticketId = req.params.ticketId;
+  const userId = req.userId!;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
   const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
-  // Verify ticket exists
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: ticketId },
+  // Verify ticket exists and belongs to user
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId, userId },
   });
 
   if (!ticket) {
@@ -87,12 +89,12 @@ activityRoutes.get('/tickets/:ticketId', async (req: Request, res: Response) => 
 
   const [activities, total] = await Promise.all([
     prisma.ticketActivity.findMany({
-      where: { ticketId },
+      where: { ticketId, userId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
     }),
-    prisma.ticketActivity.count({ where: { ticketId } }),
+    prisma.ticketActivity.count({ where: { ticketId, userId } }),
   ]);
 
   res.json({
@@ -107,13 +109,14 @@ activityRoutes.get('/tickets/:ticketId', async (req: Request, res: Response) => 
 });
 
 // POST /api/activities/tickets/:ticketId - Create activity for a ticket
-activityRoutes.post('/tickets/:ticketId', async (req: Request, res: Response) => {
+activityRoutes.post('/tickets/:ticketId', authenticateToken, async (req: AuthRequest, res: Response) => {
   const ticketId = req.params.ticketId;
+  const userId = req.userId!;
   const data = createActivitySchema.parse(req.body);
 
-  // Verify ticket exists
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: ticketId },
+  // Verify ticket exists and belongs to user
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId, userId },
   });
 
   if (!ticket) {
@@ -124,6 +127,7 @@ activityRoutes.post('/tickets/:ticketId', async (req: Request, res: Response) =>
   const activity = await prisma.ticketActivity.create({
     data: {
       ticketId,
+      userId,
       type: data.type,
       content: data.content,
     },
@@ -139,9 +143,11 @@ activityRoutes.post('/tickets/:ticketId', async (req: Request, res: Response) =>
 });
 
 // DELETE /api/activities/:id - Delete activity
-activityRoutes.delete('/:id', async (req: Request, res: Response) => {
-  const existing = await prisma.ticketActivity.findUnique({
-    where: { id: req.params.id },
+activityRoutes.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  const existing = await prisma.ticketActivity.findFirst({
+    where: { id: req.params.id, userId },
   });
 
   if (!existing) {
@@ -157,8 +163,9 @@ activityRoutes.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/activities/recent - Get recent activities across all tickets
-activityRoutes.get('/recent/all', async (_req: Request, res: Response) => {
+activityRoutes.get('/recent/all', authenticateToken, async (req: AuthRequest, res: Response) => {
   const activities = await prisma.ticketActivity.findMany({
+    where: { userId: req.userId! },
     orderBy: { createdAt: 'desc' },
     take: 20,
     include: {
@@ -175,7 +182,7 @@ activityRoutes.get('/recent/all', async (_req: Request, res: Response) => {
   });
 
   // Parse tags for tickets
-  const activitiesWithParsedTags = activities.map(activity => ({
+  const activitiesWithParsedTags = activities.map((activity: any) => ({
     ...activity,
     ticket: {
       ...activity.ticket,

@@ -1,5 +1,6 @@
-// API client configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export interface APIError {
   error: string;
@@ -32,9 +33,26 @@ export class APIClient {
     try {
       const response = await fetch(url, config);
 
+      // Handle 401 Unauthorized - clear token and redirect to login
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('auth-token');
+        // Clear zustand persist storage
+        localStorage.removeItem('auth-storage');
+        // Redirect to login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        throw new Error('Authentication required');
+      }
+
       if (!response.ok) {
         const error: APIError = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(error.error || `Request failed with status ${response.status}`);
+      }
+
+      // Handle 204 No Content responses
+      if (response.status === 204) {
+        return undefined as T;
       }
 
       return response.json();

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTicketsStore, useRemindersStore, useAIStore } from '../store/index.js';
+import { useTicketsStore, useRemindersStore, useAIStore, useTodosStore } from '../store/index.js';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '../components/ui/index.js';
 import { TicketList, ReminderItem } from '../components/tickets/index.js';
 import { useNavigate } from 'react-router-dom';
+import MarkdownRenderer from '../components/MarkdownRenderer.js';
 
 const container = {
   hidden: { opacity: 0 },
@@ -116,8 +117,11 @@ export default function Dashboard() {
   const { dashboardStats, fetchDashboardStats } = useTicketsStore();
   const { dueReminders, fetchDueReminders } = useRemindersStore();
   const { dailyBriefing, loading: aiLoading } = useAIStore();
+  const { fromAI } = useTodosStore();
 
   const [briefing, setBriefing] = useState<string | null>(null);
+  const [addingTodos, setAddingTodos] = useState(false);
+  const [todoResult, setTodoResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -128,8 +132,28 @@ export default function Dashboard() {
     try {
       const result = await dailyBriefing();
       setBriefing(result.response);
+      setTodoResult(null);
     } catch (error) {
       console.error('Failed to generate briefing:', error);
+    }
+  };
+
+  const handleAddToTodos = async () => {
+    if (!briefing) return;
+    setAddingTodos(true);
+    setTodoResult(null);
+    try {
+      const result = await fromAI(briefing);
+      if (result.count > 0) {
+        setTodoResult(`Added ${result.count} task${result.count > 1 ? 's' : ''} to Today's Tasks`);
+      } else {
+        setTodoResult(result.message || 'No actionable items found');
+      }
+    } catch (error) {
+      console.error('Failed to add todos:', error);
+      setTodoResult('Failed to add todos');
+    } finally {
+      setAddingTodos(false);
     }
   };
 
@@ -202,7 +226,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-400 to-indigo-400 flex items-center justify-center shadow-lg shadow-violet-400/30">
                   <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z" />
                     <path d="m2 17 10 5 10-5" />
@@ -217,20 +241,38 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">AI-powered daily overview</p>
                 </div>
               </div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  size="sm"
-                  onClick={handleGenerateBriefing}
-                  isLoading={aiLoading}
-                  className="bg-gradient-to-r from-violet-500 to-indigo-500 text-white hover:from-violet-600 hover:to-indigo-600 border-0 shadow-md shadow-violet-500/25"
-                >
-                  <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 12" />
-                    <path d="M21 3v9h-9" />
-                  </svg>
-                  Refresh
-                </Button>
-              </motion.div>
+              <div className="flex items-center gap-2">
+                {briefing && (
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAddToTodos}
+                      disabled={addingTodos}
+                      className="border-violet-300 dark:border-violet-700 text-white hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                    >
+                      <svg className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+                      </svg>
+                      {addingTodos ? 'Adding...' : 'Add to TODOs'}
+                    </Button>
+                  </motion.div>
+                )}
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    size="sm"
+                    onClick={handleGenerateBriefing}
+                    isLoading={aiLoading}
+                    className="bg-gradient-to-r from-violet-400 to-indigo-400 text-white hover:from-violet-500 hover:to-indigo-500 border border-violet-300/30 shadow-md shadow-violet-400/30"
+                  >
+                    <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 12" />
+                      <path d="M21 3v9h-9" />
+                    </svg>
+                    Refresh
+                  </Button>
+                </motion.div>
+              </div>
             </div>
 
             {!briefing ? (
@@ -245,41 +287,36 @@ export default function Dashboard() {
                 <h4 className="text-base font-semibold text-gray-900 dark:text-foreground mb-2">Start your day informed</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">Generate your AI-powered morning report to get insights on your tickets</p>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button onClick={handleGenerateBriefing} isLoading={aiLoading} className="bg-gradient-to-r from-violet-500 to-indigo-500 text-white border-0 shadow-md shadow-violet-500/25">
+                  <Button onClick={handleGenerateBriefing} isLoading={aiLoading} className="bg-gradient-to-r from-violet-400 to-indigo-400 text-white border-0 shadow-md shadow-violet-500/25">
                     Generate Report
                   </Button>
                 </motion.div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {briefing.split('\n\n').map((paragraph, idx) => (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <MarkdownRenderer>{briefing}</MarkdownRenderer>
+                </motion.div>
+                {/* Todo result feedback */}
+                {todoResult && (
                   <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex gap-4 p-4 rounded-2xl bg-white/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800/50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mt-4 p-3 rounded-xl text-sm ${
+                      todoResult.includes('Failed') || todoResult.includes('No actionable')
+                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                        : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    }`}
                   >
-                    <div className={`h-7 w-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention')
-                        ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 dark:from-amber-950/40 dark:to-amber-900/30 dark:text-amber-400 ring-1 ring-amber-200/50 dark:ring-amber-800/30'
-                        : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:text-emerald-400 ring-1 ring-emerald-200/50 dark:ring-emerald-800/30'
-                    }`}>
-                      {paragraph.includes('focus') || paragraph.includes('priority') || paragraph.includes('attention') ? (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" x2="12" y1="8" y2="12" />
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20 6 9 17l-5-5" />
-                        </svg>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed flex-1">{paragraph}</p>
+                    {todoResult}
                   </motion.div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
