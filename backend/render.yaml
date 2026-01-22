@@ -1,0 +1,22 @@
+services:
+  # Web Service (Backend API)
+  - type: web
+    name: tickets-wave-backend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        # Local SQLite for now (change to Turso later)
+        value: file:./dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        # Update this after deploying frontend
+        value: https://your-app.vercel.app
